@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Групування товарів</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.1/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        #fileInput {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Групування товарів</h1>
+    <input type="file" id="fileInput" accept=".xlsx, .xls" />
+    <br />
+    <button onclick="processFile()">Обробити файл</button>
+
+    <br /><br />
+    <h2>Завантажити результат</h2>
+    <button id="downloadBtn" style="display:none;" onclick="downloadFile()">Завантажити групи</button>
+
+    <script>
+        let workbook = null;
+
+        function handleFile(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                workbook = XLSX.read(data, { type: 'array' });
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        document.getElementById('fileInput').addEventListener('change', handleFile, false);
+
+        function processFile() {
+            if (!workbook) {
+                alert("Будь ласка, завантажте файл.");
+                return;
+            }
+
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+            // Обробка товарів
+            const products = [];
+            for (let i = 1; i < data.length; i++) {
+                const row = data[i];
+                const name = row[0];
+                const quantity = row[1];
+                const price = row[2];
+                const weight = row[3];
+                products.push({ name, quantity, price, weight, totalPrice: quantity * price, totalWeight: quantity * weight });
+            }
+
+            const groups = groupProducts(products);
+
+            // Створення нового Excel файлу
+            const newWorkbook = XLSX.utils.book_new();
+
+            groups.forEach((group, index) => {
+                const groupSheetData = [["Назва", "Кількість", "Ціна", "Вага", "Загальна ціна", "Загальна вага"]];
+                group.items.forEach(item => {
+                    groupSheetData.push([item.name, item.quantity, item.price, item.weight, item.quantity * item.price, item.quantity * item.weight]);
+                });
+
+                const groupSheet = XLSX.utils.aoa_to_sheet(groupSheetData);
+                XLSX.utils.book_append_sheet(newWorkbook, groupSheet, `Група ${index + 1}`);
+            });
+
+            // Збереження нового файлу
+            const wbout = XLSX.write(newWorkbook, { bookType: 'xlsx', type: 'array' });
+            const blob = new Blob([wbout], { type: 'application/octet-stream' });
+
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'Grouped_Products.xlsx';
+            document.getElementById('downloadBtn').style.display = 'inline-block';
+        }
+
+        function downloadFile() {
+            const link = document.querySelector('a');
+            link.click();
+        }
+
+        // Групування товарів по цінам та вазі
+        function groupProducts(products) {
+            const groups = [];
+            
+            products.forEach(product => {
+                let remainingQuantity = product.quantity;
+
+                while (remainingQuantity > 0) {
+                    let added = false;
+
+                    for (let group of groups) {
+                        if (canAddProduct(group, product)) {
+                            let quantityToAdd = Math.min(remainingQuantity, Math.floor((2100 - group.priceSum) / product.price), Math.floor((50 - group.weightSum) / product.weight));
+                            addProductToGroup(group, product, quantityToAdd);
+                            remainingQuantity -= quantityToAdd;
+                            added = true;
+                            break;
+                        }
+                    }
+
+                    if (!added) {
+                        const newGroup = { items: [], priceSum: 0, weightSum: 0 };
+                        let quantityToAdd = Math.min(remainingQuantity, Math.floor((2100 - newGroup.priceSum) / product.price), Math.floor((50 - newGroup.weightSum) / product.weight));
+                        addProductToGroup(newGroup, product, quantityToAdd);
+                        groups.push(newGroup);
+                        remainingQuantity -= quantityToAdd;
+                    }
+                }
+            });
+
+            return groups;
+        }
+
+        function canAddProduct(group, product) {
+            return (group.priceSum + product.totalPrice <= 2100) && (group.weightSum + product.totalWeight <= 50);
+        }
+
+        function addProductToGroup(group, product, quantity) {
+            group.items.push({ name: product.name, quantity, price: product.price, weight: product.weight });
+            group.priceSum += quantity * product.price;
+            group.weightSum += quantity * product.weight;
+        }
+    </script>
+</body>
+</html>
