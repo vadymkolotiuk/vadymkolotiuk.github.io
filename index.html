@@ -48,13 +48,13 @@
 <body>
 
     <div class="form-container">
-        <h2>Завантаження та обробка Excel файлу</h2>
+        <h2>COUNT +</h2>
 
         <!-- Форма для завантаження файлу та введення параметрів -->
         <input type="file" id="fileInput" accept=".xlsx, .xls" />
-        <input type="number" id="maxPrice" placeholder="Максимальна ціна" />
-        <input type="number" id="maxWeight" placeholder="Максимальна вага" />
-        <button onclick="processFile()">Обробити файл</button>
+        <input type="number" id="maxPrice" placeholder="Wpisz cene maksymalną" />
+        <input type="number" id="maxWeight" placeholder="Wpisz wage maksymalną" />
+        <button onclick="processFile()">Sortuj i pobierz</button>
     </div>
 
     <script>
@@ -75,7 +75,7 @@
                 // Отримуємо перший лист з файлу
                 const worksheet = workbook.Sheets[workbook.SheetNames[0]];
 
-                // Перетворюємо дані в JSON
+                // Перетворюємо дані в JSON (зчитуємо як масив масивів)
                 originalData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
                 console.log("Оригінальні дані:", originalData);
@@ -100,14 +100,20 @@
 
             // Фільтруємо дані по максимальній ціні та вазі
             const filteredData = originalData.filter(row => {
-                const price = parseFloat(row[1]);  // Припускаємо, що ціна знаходиться у другому стовпці
-                const weight = parseFloat(row[2]);  // Припускаємо, що вага знаходиться в третьому стовпці
-                return price <= maxPrice && weight <= maxWeight;
+                // Припускаємо, що ціна в колонці 1, а вага — в колонці 2
+                const price = parseFloat(row[1]);
+                const weight = parseFloat(row[2]);
+
+                // Перевірка, чи значення ціни та ваги є числовими і не перевищують максимуми
+                return !isNaN(price) && !isNaN(weight) && price <= maxPrice && weight <= maxWeight;
             });
+
+            console.log("Відфільтровані дані:", filteredData);
 
             // Генерація нового Excel файлу
             const newWorkbook = XLSX.utils.book_new();
             const newWorksheet = XLSX.utils.aoa_to_sheet(filteredData);
+
             XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, 'Filtered Data');
 
             // Генерація та завантаження нового файлу
