@@ -156,6 +156,11 @@
 
             console.log("Відфільтровані дані:", filteredData);
 
+            if (filteredData.length === 0) {
+                alert("Немає товарів, що відповідають вашим критеріям!");
+                return;
+            }
+
             // Групування даних по категорії (припускаємо, що категорія товару знаходиться в стовпці 0)
             const groupedData = groupBy(filteredData, 0);
 
