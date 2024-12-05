@@ -156,11 +156,24 @@
 
             console.log("Відфільтровані дані:", filteredData);
 
+            // Групування даних по категорії (припускаємо, що категорія товару знаходиться в стовпці 0)
+            const groupedData = groupBy(filteredData, 0);
+
+            // Сортуємо групи (за категорією, або за іншим критерієм)
+            const sortedGroupedData = Object.keys(groupedData).sort().map(key => {
+                return [key, groupedData[key]];
+            });
+
             // Генерація нового Excel файлу
             const newWorkbook = XLSX.utils.book_new();
-            const newWorksheet = XLSX.utils.aoa_to_sheet(filteredData);
 
-            XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, 'Filtered Data');
+            // Додаємо кожну групу в окремий лист
+            sortedGroupedData.forEach(group => {
+                const sheetName = group[0];
+                const groupData = group[1];
+                const newSheet = XLSX.utils.aoa_to_sheet([originalData[0], ...groupData]); // Додаємо заголовки
+                XLSX.utils.book_append_sheet(newWorkbook, newSheet, sheetName);
+            });
 
             // Генерація та завантаження нового файлу
             const newFile = XLSX.write(newWorkbook, { bookType: 'xlsx', type: 'binary' });
@@ -169,8 +182,20 @@
             // Створюємо посилання для скачування
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = 'filtered_data.xlsx';
+            link.download = 'grouped_sorted_data.xlsx';
             link.click();
+        }
+
+        // Функція для групування даних по певному стовпцю
+        function groupBy(data, column) {
+            return data.reduce((groups, row) => {
+                const group = row[column];
+                if (!groups[group]) {
+                    groups[group] = [];
+                }
+                groups[group].push(row);
+                return groups;
+            }, {});
         }
 
         // Функція для перетворення стрічки в ArrayBuffer
