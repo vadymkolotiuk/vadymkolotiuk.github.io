@@ -43,18 +43,35 @@
         .form-container button:hover {
             background-color: #45a049;
         }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ccc;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
     </style>
 </head>
 <body>
 
     <div class="form-container">
-        <h2>COUNT +</h2>
+        <h2>Завантаження та обробка Excel файлу</h2>
 
         <!-- Форма для завантаження файлу та введення параметрів -->
         <input type="file" id="fileInput" accept=".xlsx, .xls" />
-        <input type="number" id="maxPrice" placeholder="Wpisz cene maksymalną" />
-        <input type="number" id="maxWeight" placeholder="Wpisz wage maksymalną" />
-        <button onclick="processFile()">Sortuj i pobierz</button>
+        <input type="number" id="maxPrice" placeholder="Максимальна ціна" />
+        <input type="number" id="maxWeight" placeholder="Максимальна вага" />
+        <button onclick="processFile()">Обробити файл</button>
+    </div>
+
+    <div class="table-container">
+        <!-- Тут буде відображатися таблиця з даними -->
+        <table id="dataTable"></table>
     </div>
 
     <script>
@@ -79,8 +96,37 @@
                 originalData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
                 console.log("Оригінальні дані:", originalData);
+
+                // Відобразимо таблицю на сторінці
+                displayTable(originalData);
             };
             reader.readAsArrayBuffer(file);
+        }
+
+        // Функція для відображення таблиці на сторінці
+        function displayTable(data) {
+            const table = document.getElementById('dataTable');
+            table.innerHTML = ''; // Очищаємо таблицю перед додаванням нових даних
+
+            // Заголовки таблиці
+            const header = data[0];
+            const thead = table.createTHead();
+            const headerRow = thead.insertRow();
+            header.forEach(text => {
+                const th = document.createElement('th');
+                th.textContent = text;
+                headerRow.appendChild(th);
+            });
+
+            // Тіла таблиці
+            const tbody = table.createTBody();
+            data.slice(1).forEach(row => {
+                const tr = tbody.insertRow();
+                row.forEach(cell => {
+                    const td = tr.insertCell();
+                    td.textContent = cell;
+                });
+            });
         }
 
         // Обробка файлу після введення параметрів
