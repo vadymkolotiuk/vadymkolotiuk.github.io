@@ -1,218 +1,111 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Count+</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.1/xlsx.full.min.js"></script> <!-- Бібліотека для роботи з Excel -->
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f4f4f9;
-        }
-        h2 {
-            text-align: center;
-        }
-        .form-container {
-            margin: 0 auto;
-            width: 50%;
-            padding: 20px;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        .form-container input {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            font-size: 16px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        .form-container button {
-            width: 100%;
-            padding: 10px;
-            font-size: 16px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .form-container button:hover {
-            background-color: #45a049;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        table, th, td {
-            border: 1px solid #ccc;
-        }
-        th, td {
-            padding: 10px;
-            text-align: left;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Обробка Google Таблиць</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f4f4f9;
+    }
+    h2 {
+      text-align: center;
+    }
+    .form-container {
+      margin: 0 auto;
+      width: 50%;
+      padding: 20px;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    .form-container input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .form-container button {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .form-container button:hover {
+      background-color: #45a049;
+    }
+  </style>
 </head>
 <body>
 
-    <div class="form-container">
-        <h2>Count +</h2>
+  <div class="form-container">
+    <h2>Завантаження та обробка Google Таблиці</h2>
 
-        <!-- Форма для завантаження файлу та введення параметрів -->
-        <input type="file" id="fileInput" accept=".xlsx, .xls" />
-        <input type="number" id="maxPrice" placeholder="Максимальна ціна" />
-        <input type="number" id="maxWeight" placeholder="Максимальна вага" />
-        <button onclick="processFile()">Обробити файл</button>
+    <input type="file" id="fileInput" accept=".xlsx, .xls" />
+    <input type="number" id="maxPrice" placeholder="Максимальна ціна" />
+    <input type="number" id="maxWeight" placeholder="Максимальна вага" />
+    <button onclick="processFile()">Обробити файл</button>
+
+    <div id="downloadLinkContainer" style="margin-top: 20px; display: none;">
+      <button id="downloadLinkButton">Завантажити результат</button>
     </div>
+  </div>
 
-    <div class="table-container">
-        <!-- Тут буде відображатися таблиця з даними -->
-        <table id="dataTable"></table>
-    </div>
+  <script>
+    let fileId = "";
 
-    <script>
-        let originalData = [];  // Змінна для збереження оригінальних даних
+    function processFile() {
+      const maxPrice = parseFloat(document.getElementById("maxPrice").value);
+      const maxWeight = parseFloat(document.getElementById("maxWeight").value);
+      
+      if (!maxPrice || !maxWeight) {
+        alert('Будь ласка, введіть правильні значення для ціни та ваги.');
+        return;
+      }
 
-        // Обробка файлу після вибору
-        document.getElementById('fileInput').addEventListener('change', handleFileSelect, false);
+      const fileInput = document.getElementById("fileInput");
+      if (fileInput.files.length === 0) {
+        alert('Будь ласка, завантажте файл.');
+        return;
+      }
 
-        function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+      const file = fileInput.files[0];
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
+      // Завантаження файлу на Google Drive
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      google.script.run
+        .withSuccessHandler(function(fileId) {
+          document.getElementById('downloadLinkContainer').style.display = 'block';
+          window.fileId = fileId; // Зберігаємо ID файла для подальшого завантаження
+        })
+        .processData({
+          fileId: fileId,
+          maxPrice: maxPrice,
+          maxWeight: maxWeight
+        });
+    }
 
-                // Отримуємо перший лист з файлу
-                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+    // Завантаження результату
+    document.getElementById('downloadLinkButton').addEventListener('click', function() {
+      if (!fileId) {
+        alert('Не вдалося отримати результат.');
+        return;
+      }
 
-                // Перетворюємо дані в JSON (зчитуємо як масив масивів)
-                originalData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-                console.log("Оригінальні дані:", originalData);
-
-                // Відобразимо таблицю на сторінці
-                displayTable(originalData);
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        // Функція для відображення таблиці на сторінці
-        function displayTable(data) {
-            const table = document.getElementById('dataTable');
-            table.innerHTML = ''; // Очищаємо таблицю перед додаванням нових даних
-
-            // Заголовки таблиці
-            const header = data[0];
-            const thead = table.createTHead();
-            const headerRow = thead.insertRow();
-            header.forEach(text => {
-                const th = document.createElement('th');
-                th.textContent = text;
-                headerRow.appendChild(th);
-            });
-
-            // Тіла таблиці
-            const tbody = table.createTBody();
-            data.slice(1).forEach(row => {
-                const tr = tbody.insertRow();
-                row.forEach(cell => {
-                    const td = tr.insertCell();
-                    td.textContent = cell;
-                });
-            });
-        }
-
-        // Обробка файлу після введення параметрів
-        function processFile() {
-            const maxPrice = parseFloat(document.getElementById('maxPrice').value);
-            const maxWeight = parseFloat(document.getElementById('maxWeight').value);
-
-            if (!originalData.length) {
-                alert('Будь ласка, завантажте файл!');
-                return;
-            }
-
-            if (isNaN(maxPrice) || isNaN(maxWeight)) {
-                alert('Будь ласка, введіть правильні значення для ціни та ваги!');
-                return;
-            }
-
-            // Фільтруємо дані по максимальній ціні та вазі
-            const filteredData = originalData.filter(row => {
-                // Припускаємо, що ціна в колонці 1, а вага — в колонці 2
-                const price = parseFloat(row[1]);
-                const weight = parseFloat(row[2]);
-
-                // Перевірка, чи значення ціни та ваги є числовими і не перевищують максимуми
-                return !isNaN(price) && !isNaN(weight) && price <= maxPrice && weight <= maxWeight;
-            });
-
-            console.log("Відфільтровані дані:", filteredData);
-
-            if (filteredData.length === 0) {
-                alert("Немає товарів, що відповідають вашим критеріям!");
-                return;
-            }
-
-            // Групування даних по категорії (припускаємо, що категорія товару знаходиться в стовпці 0)
-            const groupedData = groupBy(filteredData, 0);
-
-            // Сортуємо групи (за категорією, або за іншим критерієм)
-            const sortedGroupedData = Object.keys(groupedData).sort().map(key => {
-                return [key, groupedData[key]];
-            });
-
-            // Генерація нового Excel файлу
-            const newWorkbook = XLSX.utils.book_new();
-
-            // Додаємо кожну групу в окремий лист
-            sortedGroupedData.forEach(group => {
-                const sheetName = group[0];
-                const groupData = group[1];
-                const newSheet = XLSX.utils.aoa_to_sheet([originalData[0], ...groupData]); // Додаємо заголовки
-                XLSX.utils.book_append_sheet(newWorkbook, newSheet, sheetName);
-            });
-
-            // Генерація та завантаження нового файлу
-            const newFile = XLSX.write(newWorkbook, { bookType: 'xlsx', type: 'binary' });
-            const blob = new Blob([s2ab(newFile)], { type: 'application/octet-stream' });
-
-            // Створюємо посилання для скачування
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = 'grouped_sorted_data.xlsx';
-            link.click();
-        }
-
-        // Функція для групування даних по певному стовпцю
-        function groupBy(data, column) {
-            return data.reduce((groups, row) => {
-                const group = row[column];
-                if (!groups[group]) {
-                    groups[group] = [];
-                }
-                groups[group].push(row);
-                return groups;
-            }, {});
-        }
-
-        // Функція для перетворення стрічки в ArrayBuffer
-        function s2ab(str) {
-            const buf = new ArrayBuffer(str.length);
-            const view = new Uint8Array(buf);
-            for (let i = 0; i < str.length; i++) {
-                view[i] = str.charCodeAt(i) & 0xFF;
-            }
-            return buf;
-        }
-    </script>
+      const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+      window.location.href = downloadUrl; // Створюємо посилання для завантаження
+    });
+  </script>
 
 </body>
 </html>
