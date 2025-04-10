@@ -10,6 +10,7 @@
       overflow: hidden;
       background: #0E2216;
       font-family: sans-serif;
+      margin-bottom:100px;
     }
     canvas {
       display: block;
@@ -89,6 +90,7 @@ let dy = -canvas.height * 0.007;
 
 let paddleHeight = canvas.height * 0.02;
 let paddleWidth = canvas.width * 0.2;
+let defaultPaddleWidth = paddleWidth;
 let paddleX = (canvas.width - paddleWidth) / 2;
 
 let brickRowCount = 5;
@@ -100,31 +102,43 @@ let brickOffsetTop = canvas.height * 0.1;
 let brickOffsetLeft = canvas.width * 0.05;
 
 let score = 0;
+let level = 1;
 let gameOver = false;
+let bonusActive = false;
+let bonusTimer = 0;
 
 const bricks = [];
-for (let c = 0; c < brickColumnCount; c++) {
-  bricks[c] = [];
-  for (let r = 0; r < brickRowCount; r++) {
-    bricks[c][r] = { x: 0, y: 0, status: 1, hits: Math.floor(Math.random() * 10) + 1 };
+function initBricks() {
+  for (let c = 0; c < brickColumnCount; c++) {
+    bricks[c] = [];
+    for (let r = 0; r < brickRowCount; r++) {
+      bricks[c][r] = {
+        x: 0,
+        y: 0,
+        status: 1,
+        hits: Math.floor(Math.random() * 20 + level)
+      };
+    }
   }
 }
+initBricks();
 
-document.addEventListener("mousemove", mouseMoveHandler, false);
-document.addEventListener("touchmove", touchMoveHandler, false);
+let bonus = { x: 0, y: 0, status: 0 };
 
-function mouseMoveHandler(e) {
-  let mouseX = e.clientX;
-  paddleX = mouseX - paddleWidth / 2;
-  if (paddleX < 0) paddleX = 0;
-  else if (paddleX + paddleWidth > canvas.width) paddleX = canvas.width - paddleWidth;
+canvas.addEventListener("touchstart", startSwipe);
+canvas.addEventListener("touchmove", swipeMove);
+let lastTouchX = null;
+function startSwipe(e) {
+  lastTouchX = e.touches[0].clientX;
 }
-
-function touchMoveHandler(e) {
-  let touchX = e.touches[0].clientX;
-  paddleX = touchX - paddleWidth / 2;
-  if (paddleX < 0) paddleX = 0;
-  else if (paddleX + paddleWidth > canvas.width) paddleX = canvas.width - paddleWidth;
+function swipeMove(e) {
+  if (lastTouchX !== null) {
+    let deltaX = e.touches[0].clientX - lastTouchX;
+    paddleX += deltaX;
+    if (paddleX < 0) paddleX = 0;
+    else if (paddleX + paddleWidth > canvas.width) paddleX = canvas.width - paddleWidth;
+    lastTouchX = e.touches[0].clientX;
+  }
 }
 
 function collisionDetection() {
@@ -140,6 +154,9 @@ function collisionDetection() {
           }
           if (b.hits <= 0) {
             b.status = 0;
+            if (Math.random() < 0.1) {
+              bonus = { x: b.x + brickWidth/2, y: b.y, status: 1 };
+            }
           }
         }
       }
@@ -159,9 +176,7 @@ function drawBall() {
 }
 
 function drawPaddle() {
-  ctx.beginPath();
   ctx.drawImage(paddleImage, paddleX, canvas.height - paddleHeight - 130, paddleWidth, paddleHeight);
-  ctx.closePath();
 }
 
 function drawBricks() {
@@ -173,7 +188,7 @@ function drawBricks() {
         bricks[c][r].x = brickX;
         bricks[c][r].y = brickY;
         ctx.font = "30px Arial";
-        ctx.fillText("📦", brickX + brickWidth / 2 - 15, brickY + brickHeight / 2 + 10);
+        ctx.fillText("\ud83d\udce6", brickX + brickWidth / 2 - 15, brickY + brickHeight / 2 + 10);
         ctx.font = "16px Arial";
         ctx.fillStyle = "#0E2216";
         ctx.fillText(bricks[c][r].hits, brickX + brickWidth / 2 - 8, brickY + brickHeight / 2 + 5);
@@ -182,10 +197,20 @@ function drawBricks() {
   }
 }
 
+function drawBonus() {
+  if (bonus.status) {
+    ctx.beginPath();
+    ctx.arc(bonus.x, bonus.y, 10, 0, Math.PI * 2);
+    ctx.fillStyle = "yellow";
+    ctx.fill();
+    ctx.closePath();
+  }
+}
+
 function drawScore() {
   ctx.font = "16px Arial";
   ctx.fillStyle = "#0f0";
-  ctx.fillText("Очки: " + score, 8, 20);
+  ctx.fillText("Очки: " + score + " | Рівень: " + level, 8, 20);
 }
 
 function draw() {
@@ -194,30 +219,55 @@ function draw() {
   drawBricks();
   drawBall();
   drawPaddle();
+  drawBonus();
   drawScore();
   collisionDetection();
 
-  if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) {
-    dx = -dx;
+  if (bonus.status) {
+    bonus.y += 2;
+    if (
+      bonus.y > canvas.height - paddleHeight - 130 &&
+      bonus.x > paddleX && bonus.x < paddleX + paddleWidth
+    ) {
+      bonus.status = 0;
+      paddleWidth *= 1.5;
+      bonusActive = true;
+      bonusTimer = Date.now();
+    }
   }
-  if (y + dy < ballRadius) {
-    dy = -dy;
-  } else if (y + dy > canvas.height - paddleHeight - 130) { // Враховуємо відступ платформи
+
+  if (bonusActive && Date.now() - bonusTimer > 10000) {
+    paddleWidth = defaultPaddleWidth;
+    bonusActive = false;
+  }
+
+  if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) dx = -dx;
+  if (y + dy < ballRadius) dy = -dy;
+
+  if (y + dy > canvas.height - paddleHeight - 130) {
     if (x > paddleX && x < paddleX + paddleWidth) {
-      // Якщо м'яч потрапляє в межі платформи
       let relativeX = x - (paddleX + paddleWidth / 2);
-      let normalizedRelativeX = relativeX / (paddleWidth / 2); // Нормалізація для відбиття
-      dx = normalizedRelativeX * 2; // Модифікуємо швидкість відбивання по горизонталі
+      let normalizedRelativeX = relativeX / (paddleWidth / 2);
+      dx = normalizedRelativeX * 2;
       dy = -dy;
     } else {
-      showGameOver("😢 Гру закінчено!");
+      showGameOver("\ud83d\ude1e Гру закінчено!");
     }
   }
 
   x += dx;
   y += dy;
+
+  if (bricks.flat().every(b => b.status === 0)) {
+    level++;
+    brickRowCount++;
+    dy *= 1.1;
+    initBricks();
+  }
+
   requestAnimationFrame(draw);
 }
+
 draw();
 
 function showGameOver(message) {
