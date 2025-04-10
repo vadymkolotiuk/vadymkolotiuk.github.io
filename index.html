@@ -240,8 +240,8 @@ function drawBall() {
 
 function drawPaddle() {
   ctx.drawImage(paddleImage, paddleX, canvas.height - paddleHeight - 130, paddleWidth, paddleHeight);
-  ctx.shadowColor = "green";
-  ctx.shadowBlur = 10;
+ctx.shadowColor = "transparent";
+        ctx.shadowBlur = 0;
 }
 
 function drawBricks() {
