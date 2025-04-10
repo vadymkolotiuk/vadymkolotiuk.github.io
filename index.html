@@ -66,7 +66,6 @@
       box-shadow: 0 0 25px #00ff99, 0 0 60px #00ffcc;
     }
 
-
     #paddle {
       position: absolute;
       bottom: 50px;
@@ -85,7 +84,6 @@
 <canvas id="gameCanvas"></canvas>
 
 <audio id="bonusSound" src="bonus.mp3" preload="auto"></audio>
-<audio id="scoreSound" src="score.mp3" preload="auto"></audio> <!-- Додано новий звуковий файл для очок -->
 
 <div id="gameOverModal">
   <div>Упс...</div>
@@ -99,7 +97,6 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const modal = document.getElementById("gameOverModal");
 const bonusSound = document.getElementById("bonusSound");
-const scoreSound = document.getElementById("scoreSound"); // Звук для очок
 
 function resizeCanvas() {
   canvas.width = window.innerWidth;
@@ -136,6 +133,7 @@ let message = "";
 let messageTimer = 0;
 
 let explosions = [];
+let bonuses = []; // Масив для бонусів
 
 const bricks = [];
 function initBricks() {
@@ -146,14 +144,12 @@ function initBricks() {
         x: 0,
         y: 0,
         status: 1,
-        hits: Math.floor(Math.random() * 20 + level)
+        hits: Math.floor(Math.random() * 15 + level)
       };
     }
   }
 }
 initBricks();
-
-let bonus = { x: 0, y: 0, status: 0, type: '' };
 
 canvas.addEventListener("touchstart", startSwipe);
 canvas.addEventListener("touchmove", swipeMove);
@@ -179,7 +175,7 @@ function drawExplosions() {
   for (let i = explosions.length - 1; i >= 0; i--) {
     let e = explosions[i];
     ctx.beginPath();
-    ctx.arc(e.x, e.y, 20 * e.alpha, 0, Math.PI * 2);
+    ctx.arc(e.x, e.y, 15 * e.alpha, 0, Math.PI * 2);
     ctx.fillStyle = `rgba(255, 0, 100, ${e.alpha})`;
     ctx.fill();
     e.alpha -= 0.05;
@@ -199,8 +195,6 @@ function collisionDetection() {
           if (b.hits > 0) {
             b.hits--;
             score++;
-            scoreSound.currentTime = 0; // Зіграємо звук
-            scoreSound.play(); // Відтворимо звук
             if (score % 10 === 0) {
               message = "🔥 Комбо! Ти в ударі!";
               messageTimer = Date.now();
@@ -209,16 +203,17 @@ function collisionDetection() {
               message = "🏆 Досягнення: 50 очок!";
               messageTimer = Date.now();
             }
-            if (level === 5) {
-              message = "🚀 Новий рівень майстерності!";
-              messageTimer = Date.now();
-            }
           }
           if (b.hits <= 0) {
             b.status = 0;
             createExplosion(b.x + brickWidth / 2, b.y + brickHeight / 2);
             if (Math.random() < 0.1) {
-              bonus = { x: b.x + brickWidth / 2, y: b.y, status: 1, type: Math.random() > 0.5 ? 'expand' : 'speed' };
+              bonuses.push({
+                x: b.x + brickWidth / 2,
+                y: b.y,
+                status: 1,
+                type: Math.random() > 0.5 ? 'expand' : 'speed'
+              });
             }
           }
         }
@@ -240,8 +235,8 @@ function drawBall() {
 
 function drawPaddle() {
   ctx.drawImage(paddleImage, paddleX, canvas.height - paddleHeight - 130, paddleWidth, paddleHeight);
-ctx.shadowColor = "transparent";
-        ctx.shadowBlur = 0;
+  ctx.shadowColor = "transparent";
+  ctx.shadowBlur = 0;
 }
 
 function drawBricks() {
@@ -263,13 +258,17 @@ function drawBricks() {
 }
 
 function drawBonus() {
-  if (bonus.status) {
-    ctx.beginPath();
-    ctx.arc(bonus.x, bonus.y, 10, 0, Math.PI * 2);
-    ctx.fillStyle = bonus.type === 'expand' ? 'yellow' : 'blue';
-    ctx.fill();
-    ctx.closePath();
-  }
+  bonuses.forEach(bonus => {
+    if (bonus.status) {
+      ctx.font = "30px Arial";  // Встановлюємо розмір шрифту
+      ctx.fillStyle = "#ff0";   // Можна змінити колір тексту на будь-який, наприклад, жовтий
+      ctx.textAlign = "center"; // Вирівнюємо текст по центру
+      ctx.textBaseline = "middle"; // Вирівнюємо текст по вертикалі
+
+      // Малюємо коробку у вигляді символу 📦
+      ctx.fillText("📦", bonus.x, bonus.y);  // Виводимо символ на позиції bonus.x і bonus.y
+    }
+  });
 }
 
 function drawMessage() {
@@ -294,78 +293,66 @@ function draw() {
   drawBricks();
   drawBall();
   drawPaddle();
-  drawBonus();
+  drawBonus();  // Малюємо всі бонуси
   drawExplosions();
   drawMessage();
   drawScore();
   collisionDetection();
 
-  if (bonus.status) {
-    bonus.y += 2;
-    if (
-      bonus.y > canvas.height - paddleHeight - 130 &&
-      bonus.x > paddleX && bonus.x < paddleX + paddleWidth
-    ) {
-      bonus.status = 0;
-      bonusSound.currentTime = 0;
-      bonusSound.play();
-      if (bonus.type === 'expand') {
-        paddleWidth *= 1.5;
-      } else if (bonus.type === 'speed') {
-        dx *= 1.5;
-        dy *= 1.5;
+  bonuses.forEach(bonus => {
+    if (bonus.status) {
+      bonus.y += 2;
+      if (
+        bonus.y > canvas.height - paddleHeight - 130 &&
+        bonus.x > paddleX && bonus.x < paddleX + paddleWidth
+      ) {
+        bonus.status = 0;
+        bonusSound.currentTime = 0;
+        bonusSound.play();
+        if (bonus.type === 'expand') {
+          paddleWidth *= 1.5;
+        } else if (bonus.type === 'speed') {
+          dx *= 1.5;
+          dy *= 1.5;
+        }
       }
-      bonusActive = true;
-      bonusTimer = Date.now();
     }
+  });
+
+  // Перевірка на стіну і платформу
+  if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) {
+    dx = -dx;
   }
-
-  if (bonusActive && Date.now() - bonusTimer > 10000) {
-    paddleWidth = defaultPaddleWidth;
-    dx = canvas.width * 0.005;
-    dy = -canvas.height * 0.007;
-    bonusActive = false;
-  }
-
-  if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) dx = -dx;
-  if (y + dy < ballRadius) dy = -dy;
-
-  if (y + dy > canvas.height - paddleHeight - 130) {
+  if (y + dy < ballRadius) {
+    dy = -dy;
+  } else if (y + dy > canvas.height - ballRadius - paddleHeight - 130) { // Виправлено поріг падіння
     if (x > paddleX && x < paddleX + paddleWidth) {
-      let relativeX = x - (paddleX + paddleWidth / 2);
-      let normalizedRelativeX = relativeX / (paddleWidth / 2);
-      dx = normalizedRelativeX * 2;
       dy = -dy;
     } else {
-      showGameOver("Упс!");
+      gameOver = true;
+      modal.style.display = "flex";
     }
   }
 
   x += dx;
   y += dy;
 
-  if (bricks.flat().every(b => b.status === 0)) {
-    level++;
-    brickRowCount++;
-    dy *= 1.1;
-    initBricks();
-  }
-
   requestAnimationFrame(draw);
 }
 
-draw();
-
-function showGameOver(messageText) {
-  gameOver = true;
-  modal.style.display = "flex";
-  modal.querySelector("div").textContent = messageText;
-}
-
 function restartGame() {
-  document.location.reload();
+  gameOver = false;
+  score = 0;
+  level = 1;
+  paddleWidth = defaultPaddleWidth;
+  dx = canvas.width * 0.005;
+  dy = -canvas.height * 0.007;
+  initBricks();
+  modal.style.display = "none";
+  draw();
 }
 
+draw();
 </script>
 </body>
 </html>
