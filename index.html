@@ -5,75 +5,101 @@
   <title>LK-Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap');
+
     body {
       margin: 0;
       overflow: hidden;
-      background: #333;
-      font-family: sans-serif;
-      margin-bottom:100px;
+      background: linear-gradient(135deg, #0b0f0e, #061d17);
+      font-family: 'Orbitron', sans-serif;
+      color: #0f0;
     }
+
     canvas {
       display: block;
       margin: auto;
-      background: url(1.jpg);
-      border: 2px solid #0f0;
+      background: radial-gradient(ellipse at center, #101f1c 0%, #050d0a 100%);
+      border: 3px solid #00ff99;
+      box-shadow: 0 0 25px #00ff99, 0 0 60px #00ffcc;
+      border-radius: 14px;
       touch-action: none;
       width: 100%;
       height: 100vh;
-      padding-bottom: 50px;
     }
+
     #gameOverModal {
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
       display: flex;
       justify-content: center;
       align-items: center;
-      background: rgba(0, 0, 0, 0.8);
+      background: rgba(5, 10, 8, 0.92);
       flex-direction: column;
       z-index: 10;
-      color: white;
-      font-size: 24px;
+      font-size: 32px;
+      text-align: center;
+      padding: 20px;
+      border: 2px solid #00ff99;
+      box-shadow: 0 0 40px #00ffaa;
+      border-radius: 16px;
       display: none;
     }
+
     .btn {
       margin-top: 20px;
-      padding: 10px 20px;
-      background: #0f0;
-      border: none;
-      border-radius: 10px;
-      font-size: 18px;
+      padding: 12px 28px;
+      background: transparent;
+      border: 2px solid #00ff99;
+      border-radius: 12px;
+      font-size: 20px;
+      color: #00ffcc;
       cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      box-shadow: 0 0 15px #00ffcc;
+      transition: all 0.3s ease;
     }
-    .btn.exit {
-      background: #f00;
-      margin-left: 10px;
+
+    .btn:hover {
+      background: #00ff99;
+      color: #000;
+      box-shadow: 0 0 25px #00ff99, 0 0 60px #00ffcc;
     }
+
+
     #paddle {
       position: absolute;
       bottom: 50px;
       left: 50%;
       width: 100px;
       height: 20px;
-      background: red;
+      background: transparent;
       background-size: cover;
       background-position: center;
       transform: translateX(-50%);
+      box-shadow: 0px 0px 25px rgba(0, 255, 100, 0.9);
     }
   </style>
 </head>
 <body>
 <canvas id="gameCanvas"></canvas>
+
+<audio id="bonusSound" src="bonus.mp3" preload="auto"></audio>
+<audio id="scoreSound" src="score.mp3" preload="auto"></audio> <!-- Додано новий звуковий файл для очок -->
+
 <div id="gameOverModal">
-  <div>😢 Гру закінчено!</div>
+  <div>Упс...</div>
   <div>
     <button class="btn" onclick="restartGame()">🔁 Ще раз</button>
-    <button class="btn exit" onclick="exitGame()">🚪 Вийти</button>
   </div>
 </div>
+
 <script>
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const modal = document.getElementById("gameOverModal");
+const bonusSound = document.getElementById("bonusSound");
+const scoreSound = document.getElementById("scoreSound"); // Звук для очок
 
 function resizeCanvas() {
   canvas.width = window.innerWidth;
@@ -106,6 +132,10 @@ let level = 1;
 let gameOver = false;
 let bonusActive = false;
 let bonusTimer = 0;
+let message = "";
+let messageTimer = 0;
+
+let explosions = [];
 
 const bricks = [];
 function initBricks() {
@@ -123,7 +153,7 @@ function initBricks() {
 }
 initBricks();
 
-let bonus = { x: 0, y: 0, status: 0 };
+let bonus = { x: 0, y: 0, status: 0, type: '' };
 
 canvas.addEventListener("touchstart", startSwipe);
 canvas.addEventListener("touchmove", swipeMove);
@@ -141,6 +171,24 @@ function swipeMove(e) {
   }
 }
 
+function createExplosion(x, y) {
+  explosions.push({ x, y, alpha: 1 });
+}
+
+function drawExplosions() {
+  for (let i = explosions.length - 1; i >= 0; i--) {
+    let e = explosions[i];
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, 20 * e.alpha, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255, 0, 100, ${e.alpha})`;
+    ctx.fill();
+    e.alpha -= 0.05;
+    if (e.alpha <= 0) {
+      explosions.splice(i, 1);
+    }
+  }
+}
+
 function collisionDetection() {
   for (let c = 0; c < brickColumnCount; c++) {
     for (let r = 0; r < brickRowCount; r++) {
@@ -151,11 +199,26 @@ function collisionDetection() {
           if (b.hits > 0) {
             b.hits--;
             score++;
+            scoreSound.currentTime = 0; // Зіграємо звук
+            scoreSound.play(); // Відтворимо звук
+            if (score % 10 === 0) {
+              message = "🔥 Комбо! Ти в ударі!";
+              messageTimer = Date.now();
+            }
+            if (score === 50) {
+              message = "🏆 Досягнення: 50 очок!";
+              messageTimer = Date.now();
+            }
+            if (level === 5) {
+              message = "🚀 Новий рівень майстерності!";
+              messageTimer = Date.now();
+            }
           }
           if (b.hits <= 0) {
             b.status = 0;
+            createExplosion(b.x + brickWidth / 2, b.y + brickHeight / 2);
             if (Math.random() < 0.1) {
-              bonus = { x: b.x + brickWidth/2, y: b.y, status: 1 };
+              bonus = { x: b.x + brickWidth / 2, y: b.y, status: 1, type: Math.random() > 0.5 ? 'expand' : 'speed' };
             }
           }
         }
@@ -177,6 +240,8 @@ function drawBall() {
 
 function drawPaddle() {
   ctx.drawImage(paddleImage, paddleX, canvas.height - paddleHeight - 130, paddleWidth, paddleHeight);
+  ctx.shadowColor = "green";
+  ctx.shadowBlur = 10;
 }
 
 function drawBricks() {
@@ -188,7 +253,7 @@ function drawBricks() {
         bricks[c][r].x = brickX;
         bricks[c][r].y = brickY;
         ctx.font = "30px Arial";
-        ctx.fillText("\ud83d\udce6", brickX + brickWidth / 2 - 15, brickY + brickHeight / 2 + 10);
+        ctx.fillText("📦", brickX + brickWidth / 2 - 15, brickY + brickHeight / 2 + 10);
         ctx.font = "16px Arial";
         ctx.fillStyle = "#0E2216";
         ctx.fillText(bricks[c][r].hits, brickX + brickWidth / 2 - 8, brickY + brickHeight / 2 + 5);
@@ -201,16 +266,26 @@ function drawBonus() {
   if (bonus.status) {
     ctx.beginPath();
     ctx.arc(bonus.x, bonus.y, 10, 0, Math.PI * 2);
-    ctx.fillStyle = "yellow";
+    ctx.fillStyle = bonus.type === 'expand' ? 'yellow' : 'blue';
     ctx.fill();
     ctx.closePath();
   }
 }
 
+function drawMessage() {
+  if (message && Date.now() - messageTimer < 2000) {
+    ctx.font = "24px 'Orbitron', sans-serif";
+    ctx.fillStyle = "#ff0";
+    ctx.textAlign = "center";
+    ctx.fillText(message, canvas.width / 2, 60);
+    ctx.textAlign = "left";
+  }
+}
+
 function drawScore() {
-  ctx.font = "16px Arial";
-  ctx.fillStyle = "#0f0";
-  ctx.fillText("Очки: " + score + " | Рівень: " + level, 8, 20);
+  ctx.font = "18px 'Orbitron', sans-serif";
+  ctx.fillStyle = "#00ffaa";
+  ctx.fillText("🧠 Очки: " + score + " | ⚡ Рівень: " + level, 16, 30);
 }
 
 function draw() {
@@ -220,6 +295,8 @@ function draw() {
   drawBall();
   drawPaddle();
   drawBonus();
+  drawExplosions();
+  drawMessage();
   drawScore();
   collisionDetection();
 
@@ -230,7 +307,14 @@ function draw() {
       bonus.x > paddleX && bonus.x < paddleX + paddleWidth
     ) {
       bonus.status = 0;
-      paddleWidth *= 1.5;
+      bonusSound.currentTime = 0;
+      bonusSound.play();
+      if (bonus.type === 'expand') {
+        paddleWidth *= 1.5;
+      } else if (bonus.type === 'speed') {
+        dx *= 1.5;
+        dy *= 1.5;
+      }
       bonusActive = true;
       bonusTimer = Date.now();
     }
@@ -238,6 +322,8 @@ function draw() {
 
   if (bonusActive && Date.now() - bonusTimer > 10000) {
     paddleWidth = defaultPaddleWidth;
+    dx = canvas.width * 0.005;
+    dy = -canvas.height * 0.007;
     bonusActive = false;
   }
 
@@ -251,7 +337,7 @@ function draw() {
       dx = normalizedRelativeX * 2;
       dy = -dy;
     } else {
-      showGameOver("\ud83d\ude1e Гру закінчено!");
+      showGameOver("Упс!");
     }
   }
 
@@ -270,19 +356,16 @@ function draw() {
 
 draw();
 
-function showGameOver(message) {
+function showGameOver(messageText) {
   gameOver = true;
   modal.style.display = "flex";
-  modal.querySelector("div").textContent = message;
+  modal.querySelector("div").textContent = messageText;
 }
 
 function restartGame() {
   document.location.reload();
 }
 
-function exitGame() {
-  window.location.href = "https://t.me/LK_Trans_BOT";
-}
 </script>
 </body>
 </html>
