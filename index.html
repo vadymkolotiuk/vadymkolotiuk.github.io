@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <title>LK-Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #0E2216;
+      font-family: sans-serif;
+    }
+    canvas {
+      display: block;
+      margin: auto;
+      background: url(1.jpg);
+      border: 2px solid #0f0;
+      touch-action: none;
+      width: 100%; /* Ширина канвасу 100% */
+      height: 100vh; /* Висота канвасу 100% від висоти екрану */
+      padding-bottom:50px;
+    }
+    #gameOverModal {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.8);
+      flex-direction: column;
+      z-index: 10;
+      color: white;
+      font-size: 24px;
+      display: none;
+    }
+    .btn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background: #0f0;
+      border: none;
+      border-radius: 10px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    .btn.exit {
+      background: #f00;
+      margin-left: 10px;
+    }
+    /* Стиль платформи */
+    #paddle {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      width: 100px;
+      height: 20px;
+      background:red; /* Встановіть своє фонове зображення */
+      background-size: cover;
+      background-position: center;
+      transform: translateX(-50%);
+    }
+  </style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+<div id="gameOverModal">
+  <div>😢 Гру закінчено!</div>
+  <div>
+    <button class="btn" onclick="restartGame()">🔁 Ще раз</button>
+    <button class="btn exit" onclick="exitGame()">🚪 Вийти</button>
+  </div>
+</div>
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+const modal = document.getElementById("gameOverModal");
+
+function resizeCanvas() {
+  // Перезадаємо розміри канвасу при зміні розміру екрану
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+let ballRadius = canvas.width * 0.01;
+let x = canvas.width / 2;
+let y = canvas.height - 30;
+let dx = canvas.width * 0.005;
+let dy = -canvas.height * 0.007;
+
+let paddleHeight = canvas.height * 0.02;
+let paddleWidth = canvas.width * 0.2;
+let paddleX = (canvas.width - paddleWidth) / 2;
+
+let rightPressed = false;
+let leftPressed = false;
+
+let brickRowCount = 5; // Збільшено кількість рядів
+let brickColumnCount = 10; // Збільшено кількість колонок
+let brickWidth = canvas.width * 0.08; // Ширина блоку залежить від ширини екрану
+let brickHeight = canvas.height * 0.04;
+let brickPadding = canvas.width * 0.01;  // Паддинг між блоками
+let brickOffsetTop = canvas.height * 0.1;
+let brickOffsetLeft = canvas.width * 0.05;
+
+let score = 0;
+let gameOver = false;
+
+const bricks = [];
+for (let c = 0; c < brickColumnCount; c++) {
+  bricks[c] = [];
+  for (let r = 0; r < brickRowCount; r++) {
+    bricks[c][r] = { x: 0, y: 0, status: 1, hits: Math.floor(Math.random() * 10) + 1 }; // hits - випадкове число від 1 до 5
+  }
+}
+
+document.addEventListener("keydown", keyDownHandler);
+document.addEventListener("keyup", keyUpHandler);
+document.addEventListener("touchstart", touchStartHandler, false);
+document.addEventListener("touchmove", touchMoveHandler, false);
+
+function keyDownHandler(e) {
+  if (e.key === "Right" || e.key === "ArrowRight") rightPressed = true;
+  else if (e.key === "Left" || e.key === "ArrowLeft") leftPressed = true;
+}
+function keyUpHandler(e) {
+  if (e.key === "Right" || e.key === "ArrowRight") rightPressed = false;
+  else if (e.key === "Left" || e.key === "ArrowLeft") leftPressed = false;
+}
+function touchStartHandler(e) {
+  if (e.touches[0].clientX < canvas.width / 2) leftPressed = true;
+  else rightPressed = true;
+}
+function touchMoveHandler(e) {
+  paddleX = e.touches[0].clientX - paddleWidth / 2;
+}
+
+function collisionDetection() {
+  for (let c = 0; c < brickColumnCount; c++) {
+    for (let r = 0; r < brickRowCount; r++) {
+      let b = bricks[c][r];
+      if (b.status === 1) {
+        // Перевірка на зіткнення м'яча з коробкою
+        if (
+          x > b.x &&
+          x < b.x + brickWidth &&
+          y > b.y &&
+          y < b.y + brickHeight
+        ) {
+          dy = -dy; // Зміна напрямку м'яча
+          
+          // Якщо блук ще не зник, зменшуємо кількість ударів
+          if (b.hits > 0) {
+            b.hits--;
+            score++; // Додаємо 1 очко щоразу, коли кількість ударів зменшується
+          }
+          
+          // Якщо кількість ударів у коробці стала 0 або менше
+          if (b.hits <= 0) {
+            b.status = 0; // Коробка зникає
+          }
+        }
+      }
+    }
+  }
+}
+
+
+let paddleImage = new Image();
+paddleImage.src = "logo.png"; // Ваше зображення для платформи
+
+function drawBall() {
+  ctx.beginPath();
+  ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
+  ctx.fillStyle = "#0f0";
+  ctx.fill();
+  ctx.closePath();
+}
+
+function drawPaddle() {
+  ctx.beginPath();
+  // Малюємо зображення замість кольору
+  ctx.drawImage(paddleImage, paddleX, canvas.height - paddleHeight, paddleWidth, paddleHeight);
+  ctx.closePath();
+}
+
+function drawBricks() {
+  for (let c = 0; c < brickColumnCount; c++) {
+    for (let r = 0; r < brickRowCount; r++) {
+      if (bricks[c][r].status === 1) {
+        let brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
+        let brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
+        bricks[c][r].x = brickX;
+        bricks[c][r].y = brickY;
+        
+        // Малюємо емодзі коробки (📦) як фон
+        ctx.font = "30px Arial";
+        ctx.fillText("📦", brickX + brickWidth / 2 - 15, brickY + brickHeight / 2 + 10); // Емодзі коробки по центру блоку
+        
+        // Малюємо цифру (кількість ударів) поверх емодзі
+        ctx.font = "16px Arial";
+        ctx.fillStyle = "#0E2216"; // Білий колір для тексту
+        ctx.fillText(bricks[c][r].hits, brickX + brickWidth / 2 - 8, brickY + brickHeight / 2 + 5); // Цифра по центру коробки
+      }
+    }
+  }
+}
+
+
+function drawScore() {
+  ctx.font = "16px Arial";
+  ctx.fillStyle = "#0f0";
+  ctx.fillText("Очки: " + score, 8, 20);
+}
+
+function draw() {
+  if (gameOver) return;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawBricks();
+  drawBall();
+  drawPaddle();
+  drawScore();
+  collisionDetection();
+
+  if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) dx = -dx;
+  if (y + dy < ballRadius) dy = -dy;
+  else if (y + dy > canvas.height - ballRadius) {
+    if (x > paddleX && x < paddleX + paddleWidth) dy = -dy;
+    else {
+      showGameOver("😢 Гру закінчено!");
+    }
+  }
+
+  if (rightPressed && paddleX < canvas.width - paddleWidth) paddleX += 7;
+  else if (leftPressed && paddleX > 0) paddleX -= 7;
+
+  x += dx;
+  y += dy;
+  requestAnimationFrame(draw);
+}
+draw();
+
+function showGameOver(message) {
+  gameOver = true;
+  modal.style.display = "flex";
+  modal.querySelector("div").textContent = message;
+}
+
+function restartGame() {
+  document.location.reload();
+}
+
+function exitGame() {
+  window.location.href = "https://t.me/LK_Trans_BOT";
+}
+
+function levelUp() {
+  brickRowCount += 1; // Збільшення кількості рядів
+  brickColumnCount += 2; // Збільшення кількості колонок
+  score = 0;
+  x = canvas.width / 2;
+  y = canvas.height - 30;
+  dx = canvas.width * 0.005;
+  dy = -canvas.height * 0.007;
+
+  // Перегенеруємо блоки
+  for (let c = 0; c < brickColumnCount; c++) {
+    bricks[c] = [];
+    for (let r = 0; r < brickRowCount; r++) {
+      bricks[c][r] = { x: 0, y: 0, status: 1, hits: Math.floor(Math.random() * 10) + 1 }; // Випадкові значення hits
+    }
+  }
+
+  draw(); // Почати заново
+}
+</script>
+</body>
+</html>
