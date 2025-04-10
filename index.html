@@ -83,7 +83,7 @@ window.addEventListener('resize', resizeCanvas);
 
 let ballRadius = canvas.width * 0.01;
 let x = canvas.width / 2;
-let y = canvas.height - 110;
+let y = canvas.height - 160;
 let dx = canvas.width * 0.005;
 let dy = -canvas.height * 0.007;
 
@@ -160,7 +160,7 @@ function drawBall() {
 
 function drawPaddle() {
   ctx.beginPath();
-  ctx.drawImage(paddleImage, paddleX, canvas.height - paddleHeight - 80, paddleWidth, paddleHeight);
+  ctx.drawImage(paddleImage, paddleX, canvas.height - paddleHeight - 130, paddleWidth, paddleHeight);
   ctx.closePath();
 }
 
@@ -202,7 +202,7 @@ function draw() {
   }
   if (y + dy < ballRadius) {
     dy = -dy;
-  } else if (y + dy > canvas.height - paddleHeight - 80) { // Враховуємо відступ платформи
+  } else if (y + dy > canvas.height - paddleHeight - 130) { // Враховуємо відступ платформи
     if (x > paddleX && x < paddleX + paddleWidth) {
       // Якщо м'яч потрапляє в межі платформи
       let relativeX = x - (paddleX + paddleWidth / 2);
