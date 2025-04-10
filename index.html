@@ -33,6 +33,7 @@
       color: white;
       font-size: 24px;
       display: none;
+      pointer-events: none; /* Блокуємо взаємодію з модальним вікном */
     }
     .btn {
       margin-top: 20px;
@@ -224,15 +225,33 @@ function showGameOver(message) {
   gameOver = true;
   modal.style.display = "flex";
   modal.querySelector("div").textContent = message;
+  
+  // Вмикаємо можливість взаємодії з модальним вікном
+  modal.style.pointerEvents = "auto"; // Дозволяємо взаємодіяти з модальним вікном
 }
 
 function restartGame() {
+  modal.style.pointerEvents = "none"; // Забороняємо взаємодію з модальним вікном після перезапуску
   document.location.reload();
 }
 
 function exitGame() {
+  modal.style.pointerEvents = "none"; // Забороняємо взаємодію з модальним вікном після виходу
   window.location.href = "https://t.me/LK_Trans_BOT";
 }
+
+// Додано для блокування свайпів
+modal.addEventListener('touchstart', function(e) {
+  e.preventDefault();
+}, { passive: false });
+
+modal.addEventListener('touchmove', function(e) {
+  e.preventDefault();
+}, { passive: false });
+
+modal.addEventListener('touchend', function(e) {
+  e.preventDefault();
+}, { passive: false });
 </script>
 </body>
 </html>
