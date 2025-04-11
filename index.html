@@ -343,8 +343,20 @@ function restartGame() {
 }
 
 function startGame() {
-  startScreen.style.display = 'none'; // Hide start screen
-  restartGame(); // Restart the game to initialize
+ score = 0;
+  missed = 0;
+  level = 1;
+  paused = false;
+  gameOver = false;
+  timeLeft = fastMode ? 30 : 60;
+  logos = [];
+  bombs = [];
+  updateScore();
+  timerDiv.textContent = "Час: " + timeLeft;
+  gameOverDiv.style.display = 'none';
+  spawnLogo();
+  spawnBomb();
+  spawnBonus();
   draw();
   countdown();
 }
