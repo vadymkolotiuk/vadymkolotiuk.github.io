@@ -31,7 +31,7 @@
       color: white;
     }
 
-    .score, .timer {
+    .score {
       font-size: 20px;
       margin-bottom: 5px;
     }
@@ -96,7 +96,6 @@
 
 <div class="overlay">
   <div class="score" id="score">Очки: 0</div>
-  <div class="timer" id="timer">Час: 60</div>
 </div>
 
 <div class="game-over" id="gameOver">
@@ -114,7 +113,6 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const scoreDiv = document.getElementById("score");
-const timerDiv = document.getElementById("timer");
 const gameOverDiv = document.getElementById("gameOver");
 const levelUpDiv = document.getElementById("levelUpMsg");
 const startScreen = document.getElementById("startScreen");
@@ -131,7 +129,6 @@ let missed = 0;
 let level = 1;
 let gameOver = false;
 let paused = false;
-let timeLeft = 60;
 
 let logos = [];
 let bombs = [];
@@ -303,16 +300,7 @@ function togglePause() {
   paused = !paused;
   if (!paused) {
     draw();
-    countdown();
   }
-}
-
-function countdown() {
-  if (gameOver || paused) return;
-  timeLeft--;
-  timerDiv.textContent = "Час: " + timeLeft;
-  if (timeLeft <= 0) endGame();
-  else setTimeout(countdown, 1000);
 }
 
 function endGame() {
@@ -326,17 +314,14 @@ function restartGame() {
   level = 1;
   paused = false;
   gameOver = false;
-  timeLeft = fastMode ? 30 : 60;
   logos = [];
   bombs = [];
   updateScore();
-  timerDiv.textContent = "Час: " + timeLeft;
   gameOverDiv.style.display = 'none';
   spawnLogo();
   spawnBomb();
   spawnBonus();
   draw();
-  countdown();
 }
 
 function startGame() {
@@ -346,17 +331,14 @@ function startGame() {
   level = 1;
   paused = false;
   gameOver = false;
-  timeLeft = fastMode ? 30 : 60;
   logos = [];
   bombs = [];
   updateScore();
-  timerDiv.textContent = "Час: " + timeLeft;
   gameOverDiv.style.display = 'none';
   spawnLogo();
   spawnBomb();
   spawnBonus();
   draw();
-  countdown();
 }
 
 // Moved touch event handling here:
