@@ -1,120 +1,123 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8">
-  <title>LK-Game</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LK-LOGO</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap');
-
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
+      height: 100%;
       overflow: hidden;
-      background: linear-gradient(135deg, #0b0f0e, #061d17);
-      font-family: 'Orbitron', sans-serif;
-      color: #0f0;
+      background-color: #222;
+      font-family: 'Arial', sans-serif;
     }
 
-  canvas {
-  display: block;
-  margin: auto;
-  background: url(m.jpg) no-repeat center center;
-  background-size: cover;
-  border: 3px solid #00ff99;
-  box-shadow: 0 0 25px #00ff99, 0 0 60px #00ffcc;
-  border-radius: 14px;
-  touch-action: none;
-  width: 99%;
-  height: 100vh;
-  position: relative; /* Додаємо позиціонування */
-  z-index: 1; /* Канвас тепер буде над псевдоелементом */
-}
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      background: url('level1.jpg') no-repeat center center;
+      background-size: cover;
+      transition: background 1s ease-in-out;
+    }
 
-/* Додатковий напівпрозорий шар */
-canvas::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%; /* Залишити 100% для повного покриття */
-  height: 100%; /* Залишити 100% для повного покриття */
-  background: rgba(0, 0, 0, 0.7); /* Чорний фон з прозорістю 70% */
-  z-index: 0; /* Псевдоелемент має бути позаду канваса */
-}
-
-
-
-
-    #gameOverModal {
+    .overlay {
       position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: rgba(5, 10, 8, 0.92);
-      flex-direction: column;
+      top: 10px;
+      left: 10px;
       z-index: 10;
+      color: white;
+    }
+
+    .score, .timer {
+      font-size: 20px;
+      margin-bottom: 5px;
+    }
+
+    .game-over, .pause-screen, .level-up, .start-screen {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       font-size: 32px;
       text-align: center;
-      padding: 20px;
-      border: 2px solid #00ff99;
-      box-shadow: 0 0 40px #00ffaa;
-      border-radius: 16px;
+      color: white;
       display: none;
+      z-index: 10;
     }
 
-    .btn {
-      margin-top: 20px;
-      padding: 12px 28px;
-      background: transparent;
-      border: 2px solid #00ff99;
-      border-radius: 12px;
-      font-size: 20px;
-      color: #00ffcc;
+    .level-up {
+      font-size: 48px;
+      color: yellow;
+      text-shadow: 0 0 20px yellow;
+      animation: zoomFade 2s ease-in-out;
+    }
+
+    .start-screen {
+      display: block;
+      z-index: 100;
+    }
+
+    .start-screen button {
+      padding: 15px 30px;
+      font-size: 24px;
+      border: none;
+      border-radius: 10px;
+      background-color: #444;
+      color: white;
       cursor: pointer;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      box-shadow: 0 0 15px #00ffcc;
-      transition: all 0.3s ease;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.7);
     }
 
-    .btn:hover {
-      background: #00ff99;
-      color: #000;
-      box-shadow: 0 0 25px #00ff99, 0 0 60px #00ffcc;
+    @keyframes zoomFade {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.2); }
+      30% { opacity: 1; transform: translate(-50%, -50%) scale(1.3); }
+      70% { opacity: 1; }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
     }
 
-    #paddle {
-      position: absolute;
-      bottom: 50px;
-      left: 50%;
-      width: 100px;
-      height: 20px;
-      background: transparent;
-      background-size: cover;
-      background-position: center;
-      transform: translateX(-50%);
-      box-shadow: 0px 0px 25px rgba(0, 255, 100, 0.9);
+    button {
+      padding: 10px 20px;
+      font-size: 18px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 8px;
+      background-color: #444;
+      color: white;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
+
 <canvas id="gameCanvas"></canvas>
 
-<audio id="bonusSound" src="bonus.mp3" preload="auto"></audio>
+<div class="overlay">
+  <div class="score" id="score">Очки: 0</div>
+  <div class="timer" id="timer">Час: 60</div>
+</div>
 
-<div id="gameOverModal">
-  <div>Упс...</div>
-  <div>
-    <button class="btn" onclick="restartGame()">🔁 Ще раз</button>
-  </div>
+<div class="game-over" id="gameOver">
+  <p>Гра завершена!</p>
+  <button onclick="restartGame()">Перезапустити</button>
+</div>
+
+<div class="level-up" id="levelUpMsg">Рівень 2!</div>
+
+<div class="start-screen" id="startScreen">
+  <button onclick="startGame()">Почати гру</button>
 </div>
 
 <script>
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
-const modal = document.getElementById("gameOverModal");
-const bonusSound = document.getElementById("bonusSound");
+const scoreDiv = document.getElementById("score");
+const timerDiv = document.getElementById("timer");
+const gameOverDiv = document.getElementById("gameOver");
+const levelUpDiv = document.getElementById("levelUpMsg");
+const startScreen = document.getElementById("startScreen");
 
 function resizeCanvas() {
   canvas.width = window.innerWidth;
@@ -123,254 +126,235 @@ function resizeCanvas() {
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
 
-let ballRadius = canvas.width * 0.012;
-let x = canvas.width / 2;
-let y = canvas.height - 160;
-let dx = canvas.width * 0.005;
-let dy = -canvas.height * 0.007;
-
-let paddleHeight = canvas.height * 0.02;
-let paddleWidth = canvas.width * 0.2;
-let defaultPaddleWidth = paddleWidth;
-let paddleX = (canvas.width - paddleWidth) / 2;
-
-let brickRowCount = 5;
-let brickColumnCount = 10;
-let brickWidth = canvas.width * 0.08;
-let brickHeight = canvas.height * 0.04;
-let brickPadding = canvas.width * 0.01;
-let brickOffsetTop = canvas.height * 0.1;
-let brickOffsetLeft = canvas.width * 0.05;
-
 let score = 0;
+let missed = 0;
 let level = 1;
 let gameOver = false;
-let bonusActive = false;
-let bonusTimer = 0;
-let message = "";
-let messageTimer = 0;
+let paused = false;
+let timeLeft = 60;
 
-let explosions = [];
-let bonuses = []; // Масив для бонусів
+let logos = [];
+let bombs = [];
+let logoImages = ['logo1.png', 'logo2.png', 'logo3.png'];
+let fastMode = false;
+let levelImages = ['level1.jpg', 'level2.jpg', 'level3.jpg', 'level4.jpg']; // Images for different levels
 
-const bricks = [];
-function initBricks() {
-  for (let c = 0; c < brickColumnCount; c++) {
-    bricks[c] = [];
-    for (let r = 0; r < brickRowCount; r++) {
-      bricks[c][r] = {
-        x: 0,
-        y: 0,
-        status: 1,
-        hits: Math.floor(Math.random() * 15 + level)
-      };
-    }
+let levelSpeed = 3; // Starting speed for level 1
+
+class GameObject {
+  constructor(x, y, width, height, src, speed) {
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+    this.image = new Image();
+    this.image.src = src;
+    this.speed = speed;
+    this.loaded = false;
+    this.image.onload = () => this.loaded = true;
   }
-}
-initBricks();
 
-canvas.addEventListener("touchstart", startSwipe);
-canvas.addEventListener("touchmove", swipeMove);
-let lastTouchX = null;
-function startSwipe(e) {
-  lastTouchX = e.touches[0].clientX;
-}
-function swipeMove(e) {
-  if (lastTouchX !== null) {
-    let deltaX = e.touches[0].clientX - lastTouchX;
-    paddleX += deltaX;
-    if (paddleX < 0) paddleX = 0;
-    else if (paddleX + paddleWidth > canvas.width) paddleX = canvas.width - paddleWidth;
-    lastTouchX = e.touches[0].clientX;
+  move() {
+    this.y += this.speed;
   }
-}
 
-function createExplosion(x, y) {
-  explosions.push({ x, y, alpha: 1 });
-}
-
-function drawExplosions() {
-  for (let i = explosions.length - 1; i >= 0; i--) {
-    let e = explosions[i];
-    ctx.beginPath();
-    ctx.arc(e.x, e.y, 15 * e.alpha, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255, 0, 100, ${e.alpha})`;
-    ctx.fill();
-    e.alpha -= 0.05;
-    if (e.alpha <= 0) {
-      explosions.splice(i, 1);
+  draw() {
+    if (this.loaded) {
+      ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
     }
   }
 }
 
-function collisionDetection() {
-  for (let c = 0; c < brickColumnCount; c++) {
-    for (let r = 0; r < brickRowCount; r++) {
-      let b = bricks[c][r];
-      if (b.status === 1) {
-        if (x > b.x && x < b.x + brickWidth && y > b.y && y < b.y + brickHeight) {
-          dy = -dy;
-          if (b.hits > 0) {
-            b.hits--;
-            score++;
-            if (score % 10 === 0) {
-              message = "🔥 Комбо! Ти в ударі!";
-              messageTimer = Date.now();
-            }
-            if (score === 50) {
-              message = "🏆 Досягнення: 50 очок!";
-              messageTimer = Date.now();
-            }
-          }
-          if (b.hits <= 0) {
-            b.status = 0;
-            createExplosion(b.x + brickWidth / 2, b.y + brickHeight / 2);
-            if (Math.random() < 0.1) {
-              bonuses.push({
-                x: b.x + brickWidth / 2,
-                y: b.y,
-                status: 1,
-                type: Math.random() > 0.5 ? 'expand' : 'speed'
-              });
-            }
-          }
-        }
-      }
-    }
+function getRandomSize() {
+  const baseHeight = Math.max(window.innerHeight, window.innerWidth) / 25;
+  const height = Math.random() * (baseHeight * 1.2 - baseHeight * 0.6) + baseHeight * 0.6;
+  const width = height * 2;
+  return {
+    width: Math.min(width, canvas.width * 0.25),
+    height: Math.min(height, canvas.height * 0.15)
+  };
+}
+
+function spawnLogo() {
+  if (gameOver || paused) return;
+  const count = Math.floor(Math.random() * (level + 1)) + 1;
+  for (let i = 0; i < count; i++) {
+    const { width, height } = getRandomSize();
+    const x = Math.random() * (canvas.width - width);
+    const y = -height;
+    const speed = Math.random() * levelSpeed + 3 + level * 0.3;
+    const logo = new GameObject(x, y, width, height, logoImages[Math.floor(Math.random() * logoImages.length)], speed);
+    logo.isBonus = false;
+    logos.push(logo);
   }
+  setTimeout(spawnLogo, Math.random() * 1000 + 500);
 }
 
-let paddleImage = new Image();
-paddleImage.src = "logo.png";
-
-function drawBall() {
-  ctx.beginPath();
-  ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
-  ctx.fillStyle = "#0f0";
-  ctx.fill();
-  ctx.closePath();
-}
-
-function drawPaddle() {
-  ctx.drawImage(paddleImage, paddleX, canvas.height - paddleHeight - 130, paddleWidth, paddleHeight);
-  ctx.shadowColor = "transparent";
-  ctx.shadowBlur = 0;
-}
-
-function drawBricks() {
-  for (let c = 0; c < brickColumnCount; c++) {
-    for (let r = 0; r < brickRowCount; r++) {
-      if (bricks[c][r].status === 1) {
-        let brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
-        let brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
-        bricks[c][r].x = brickX;
-        bricks[c][r].y = brickY;
-        ctx.font = "30px Arial";
-        ctx.fillText("📦", brickX + brickWidth / 2 - 15, brickY + brickHeight / 2 + 10);
-        ctx.font = "16px Arial";
-        ctx.fillStyle = "#0E2216";
-        ctx.fillText(bricks[c][r].hits, brickX + brickWidth / 2 - 8, brickY + brickHeight / 2 + 5);
-      }
-    }
+function spawnBomb() {
+  if (gameOver || paused) return;
+  const count = Math.floor(Math.random() * level / 2) + 1;
+  for (let i = 0; i < count; i++) {
+    const { width, height } = getRandomSize();
+    const x = Math.random() * (canvas.width - width);
+    const y = -height;
+    const speed = Math.random() * levelSpeed + 3 + level * 0.3;
+    const bomb = new GameObject(x, y, width, height, 'bomb.png', speed);
+    bomb.isBomb = true;
+    bombs.push(bomb);
   }
+  setTimeout(spawnBomb, Math.random() * 4000 + 3000);
 }
 
-function drawBonus() {
-  bonuses.forEach(bonus => {
-    if (bonus.status) {
-      ctx.font = "30px Arial";  // Встановлюємо розмір шрифту
-      ctx.fillStyle = "#ff0";   // Можна змінити колір тексту на будь-який, наприклад, жовтий
-      ctx.textAlign = "center"; // Вирівнюємо текст по центру
-      ctx.textBaseline = "middle"; // Вирівнюємо текст по вертикалі
-
-      // Малюємо коробку у вигляді символу 📦
-      ctx.fillText("📦", bonus.x, bonus.y);  // Виводимо символ на позиції bonus.x і bonus.y
-    }
-  });
-}
-
-function drawMessage() {
-  if (message && Date.now() - messageTimer < 2000) {
-    ctx.font = "24px 'Orbitron', sans-serif";
-    ctx.fillStyle = "#ff0";
-    ctx.textAlign = "center";
-    ctx.fillText(message, canvas.width / 2, 60);
-    ctx.textAlign = "left";
-  }
-}
-
-function drawScore() {
-  ctx.font = "18px 'Orbitron', sans-serif";
-  ctx.fillStyle = "#00ffaa";
-  ctx.fillText("🧠 Очки: " + score + " | ⚡ Рівень: " + level, 16, 30);
+function spawnBonus() {
+  if (gameOver || paused) return;
+  const { width, height } = getRandomSize();
+  const x = Math.random() * (canvas.width - width);
+  const y = -height;
+  const bonus = new GameObject(x, y, width, height, 'bonus.png', levelSpeed);
+  bonus.isBonus = true;
+  logos.push(bonus);
+  setTimeout(spawnBonus, Math.random() * 15000 + 10000);
 }
 
 function draw() {
-  if (gameOver) return;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawBricks();
-  drawBall();
-  drawPaddle();
-  drawBonus();  // Малюємо всі бонуси
-  drawExplosions();
-  drawMessage();
-  drawScore();
-  collisionDetection();
+  if (gameOver || paused) return;
 
-  bonuses.forEach(bonus => {
-    if (bonus.status) {
-      bonus.y += 2;
-      if (
-        bonus.y > canvas.height - paddleHeight - 130 &&
-        bonus.x > paddleX && bonus.x < paddleX + paddleWidth
-      ) {
-        bonus.status = 0;
-        bonusSound.currentTime = 0;
-        bonusSound.play();
-        if (bonus.type === 'expand') {
-          paddleWidth *= 1.5;
-        } else if (bonus.type === 'speed') {
-          dx *= 1.5;
-          dy *= 1.5;
-        }
-      }
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  logos.forEach((logo, index) => {
+    logo.move();
+    logo.draw();
+    if (logo.y > canvas.height) {
+      logos.splice(index, 1);
+      missed++;
+      score -= 5;
+      updateScore();
+      if (missed >= 3) endGame();
     }
   });
 
-  // Перевірка на стіну і платформу
-  if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) {
-    dx = -dx;
-  }
-  if (y + dy < ballRadius) {
-    dy = -dy;
-  } else if (y + dy > canvas.height - ballRadius - paddleHeight - 130) { // Виправлено поріг падіння
-    if (x > paddleX && x < paddleX + paddleWidth) {
-      dy = -dy;
-    } else {
-      gameOver = true;
-      modal.style.display = "flex";
-    }
-  }
-
-  x += dx;
-  y += dy;
+  bombs.forEach((bomb, index) => {
+    bomb.move();
+    bomb.draw();
+    if (bomb.y > canvas.height) bombs.splice(index, 1);
+  });
 
   requestAnimationFrame(draw);
 }
 
-function restartGame() {
-  gameOver = false;
-  score = 0;
-  level = 1;
-  paddleWidth = defaultPaddleWidth;
-  dx = canvas.width * 0.005;
-  dy = -canvas.height * 0.007;
-  initBricks();
-  modal.style.display = "none";
-  draw();
+function updateScore() {
+  scoreDiv.textContent = "Очки: " + score;
+  checkLevelUp();
 }
 
-draw();
+function checkLevelUp() {
+  let newLevel = 1;
+
+  // Check level based on score thresholds
+  if (score >= 10000) newLevel = 5;
+  else if (score >= 5000) newLevel = 4;
+  else if (score >= 2000) newLevel = 3;
+  else if (score >= 1000) newLevel = 2;
+
+  if (newLevel > level) {
+    level = newLevel;
+    levelSpeed = 3 + level * 0.5; // Adjust speed based on the level
+    Background();
+    levelUpAnimation();
+  }
+}
+
+function levelUpAnimation() {
+  levelUpDiv.style.display = 'block';
+  setTimeout(() => levelUpDiv.style.display = 'none', 2000); // Hide level-up message after 2 seconds
+}
+
+function Background() {
+  canvas.style.backgroundImage = `url('${levelImages[level - 1]}')`;
+}
+
+function handleTap(x, y) {
+  if (gameOver || paused) return;
+
+  for (let i = 0; i < logos.length; i++) {
+    let l = logos[i];
+    if (x >= l.x && x <= l.x + l.width && y >= l.y && y <= l.y + l.height) {
+      logos.splice(i, 1);
+      score += l.isBonus ? 50 : 10;
+      updateScore();
+      return;
+    }
+  }
+
+  for (let i = 0; i < bombs.length; i++) {
+    let b = bombs[i];
+    if (x >= b.x && x <= b.x + b.width && y >= b.y && y <= b.y + b.height) {
+      bombs.splice(i, 1);
+      score -= 20;
+      updateScore();
+      return;
+    }
+  }
+}
+
+function togglePause() {
+  paused = !paused;
+  if (!paused) {
+    draw();
+    countdown();
+  }
+}
+
+function countdown() {
+  if (gameOver || paused) return;
+  timeLeft--;
+  timerDiv.textContent = "Час: " + timeLeft;
+  if (timeLeft <= 0) endGame();
+  else setTimeout(countdown, 1000);
+}
+
+function endGame() {
+  gameOver = true;
+  gameOverDiv.style.display = 'block';
+}
+
+function restartGame() {
+  score = 0;
+  missed = 0;
+  level = 1;
+  paused = false;
+  gameOver = false;
+  timeLeft = fastMode ? 30 : 60;
+  logos = [];
+  bombs = [];
+  updateScore();
+  timerDiv.textContent = "Час: " + timeLeft;
+  gameOverDiv.style.display = 'none';
+  spawnLogo();
+  spawnBomb();
+  spawnBonus();
+  draw();
+  countdown();
+}
+
+function startGame() {
+  startScreen.style.display = 'none'; // Hide start screen
+  restartGame(); // Restart the game to initialize
+  draw();
+  countdown();
+}
+
+canvas.addEventListener('click', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  handleTap(e.clientX - rect.left, e.clientY - rect.top);
+});
+canvas.addEventListener('touchstart', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const touch = e.touches[0];
+  handleTap(touch.clientX - rect.left, touch.clientY - rect.top);
+});
+
 </script>
+
 </body>
 </html>
