@@ -163,6 +163,11 @@ class GameObject {
       ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
     }
   }
+
+  // Допоміжний метод для перевірки чи точка в зоні логотипа
+  isTapped(x, y) {
+    return x >= this.x && x <= this.x + this.width && y >= this.y && y <= this.y + this.height;
+  }
 }
 
 function getRandomSize() {
@@ -278,7 +283,7 @@ function handleTap(x, y) {
 
   for (let i = 0; i < logos.length; i++) {
     let l = logos[i];
-    if (x >= l.x && x <= l.x + l.width && y >= l.y && y <= l.y + l.height) {
+    if (l.isTapped(x, y)) { // Використовуємо новий метод isTapped
       logos.splice(i, 1);
       score += l.isBonus ? 50 : 10;
       updateScore();
@@ -288,7 +293,7 @@ function handleTap(x, y) {
 
   for (let i = 0; i < bombs.length; i++) {
     let b = bombs[i];
-    if (x >= b.x && x <= b.x + b.width && y >= b.y && y <= b.y + b.height) {
+    if (b.isTapped(x, y)) { // Використовуємо новий метод isTapped
       bombs.splice(i, 1);
       score -= 20;
       updateScore();
@@ -344,10 +349,13 @@ function startGame() {
   countdown();
 }
 
+// Обробка кліків
 canvas.addEventListener('click', (e) => {
   const rect = canvas.getBoundingClientRect();
   handleTap(e.clientX - rect.left, e.clientY - rect.top);
 });
+
+// Обробка торкань на мобільних пристроях
 canvas.addEventListener('touchstart', (e) => {
   const rect = canvas.getBoundingClientRect();
   const touch = e.touches[0];
@@ -355,6 +363,7 @@ canvas.addEventListener('touchstart', (e) => {
 });
 
 </script>
+
 
 </body>
 </html>
