@@ -79,6 +79,27 @@
       100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
     }
 
+    @keyframes flicker {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .flash-effect {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+background: radial-gradient(circle, rgba(0,255,0,0.8) 0%, rgba(0,255,0,0) 70%);
+
+      pointer-events: none;
+      animation: flashOut 0.5s forwards;
+      z-index: 1000;
+    }
+
+    @keyframes flashOut {
+      from { transform: scale(1); opacity: 1; }
+      to { transform: scale(2); opacity: 0; }
+    }
+
     button {
       padding: 10px 20px;
       font-size: 18px;
@@ -89,6 +110,19 @@
       color: white;
       cursor: pointer;
     }
+
+@keyframes screenShake {
+  0% { transform: translate(0px, 0px); }
+  25% { transform: translate(5px, -5px); }
+  50% { transform: translate(-5px, 5px); }
+  75% { transform: translate(5px, 5px); }
+  100% { transform: translate(0px, 0px); }
+}
+
+.shake {
+  animation: screenShake 0.3s;
+}
+
   </style>
 </head>
 <body>
@@ -135,9 +169,12 @@ let logos = [];
 let bombs = [];
 let logoImages = ['logo1.png', 'logo2.png', 'logo3.png'];
 let fastMode = false;
-let levelImages = ['level1.jpg', 'level2.jpg', 'level3.jpg', 'level4.jpg']; // Images for different levels
+let levelImages = ['level1.jpg', 'level2.jpg', 'level3.jpg', 'level4.jpg'];
 
-let levelSpeed = 1; // Starting speed for level 1
+let levelSpeed = 1;
+
+// Звуковий файл вибуху
+const explosionSound = new Audio('explosion.mp3'); // Завантаження звуку вибуху
 
 class GameObject {
   constructor(x, y, width, height, src, speed) {
@@ -150,6 +187,8 @@ class GameObject {
     this.speed = speed;
     this.loaded = false;
     this.image.onload = () => this.loaded = true;
+    this.isBonus = false;
+    this.isBomb = false;
   }
 
   move() {
@@ -158,7 +197,14 @@ class GameObject {
 
   draw() {
     if (this.loaded) {
-      ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+      if (this.isBonus) {
+        ctx.save();
+        ctx.globalAlpha = 0.5 + 0.5 * Math.sin(Date.now() / 200);
+        ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+        ctx.restore();
+      } else {
+        ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+      }
     }
   }
 }
@@ -182,7 +228,6 @@ function spawnLogo() {
     const y = -height;
     const speed = Math.random() * levelSpeed + 3 + level * 0.3;
     const logo = new GameObject(x, y, width, height, logoImages[Math.floor(Math.random() * logoImages.length)], speed);
-    logo.isBonus = false;
     logos.push(logo);
   }
   setTimeout(spawnLogo, Math.random() * 1000 + 500);
@@ -214,9 +259,17 @@ function spawnBonus() {
   setTimeout(spawnBonus, Math.random() * 15000 + 10000);
 }
 
+function createFlash(x, y) {
+  const flash = document.createElement('div');
+  flash.className = 'flash-effect';
+  flash.style.left = `${x - 50}px`;
+  flash.style.top = `${y - 50}px`;
+  document.body.appendChild(flash);
+  setTimeout(() => flash.remove(), 500);
+}
+
 function draw() {
   if (gameOver || paused) return;
-
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   logos.forEach((logo, index) => {
@@ -247,8 +300,6 @@ function updateScore() {
 
 function checkLevelUp() {
   let newLevel = 1;
-
-  // Check level based on score thresholds
   if (score >= 10000) newLevel = 5;
   else if (score >= 5000) newLevel = 4;
   else if (score >= 2000) newLevel = 3;
@@ -256,7 +307,7 @@ function checkLevelUp() {
 
   if (newLevel > level) {
     level = newLevel;
-    levelSpeed = 3 + level * 0.5; // Adjust speed based on the level
+    levelSpeed = 3 + level * 0.5;
     Background();
     levelUpAnimation();
   }
@@ -264,7 +315,7 @@ function checkLevelUp() {
 
 function levelUpAnimation() {
   levelUpDiv.style.display = 'block';
-  setTimeout(() => levelUpDiv.style.display = 'none', 2000); // Hide level-up message after 2 seconds
+  setTimeout(() => levelUpDiv.style.display = 'none', 2000);
 }
 
 function Background() {
@@ -273,8 +324,7 @@ function Background() {
 
 function handleTap(x, y) {
   if (gameOver || paused) return;
-
-  const hitBoxMargin = 20; // додатковий відступ для зручності натискання
+  const hitBoxMargin = 20;
 
   for (let i = 0; i < logos.length; i++) {
     let l = logos[i];
@@ -282,6 +332,7 @@ function handleTap(x, y) {
       logos.splice(i, 1);
       score += l.isBonus ? 50 : 10;
       updateScore();
+      createFlash(x, y);
       return;
     }
   }
@@ -292,6 +343,25 @@ function handleTap(x, y) {
       bombs.splice(i, 1);
       score -= 20;
       updateScore();
+
+      // Вібрація
+      if (navigator.vibrate) navigator.vibrate(200);
+
+      // Ефект тряски
+      canvas.classList.add("shake");
+      setTimeout(() => {
+        canvas.classList.remove("shake");
+      }, 300);
+
+      // Анімація вибуху
+      canvas.classList.add("explosion-effect");
+      setTimeout(() => {
+        canvas.classList.remove("explosion-effect");
+      }, 500); // 500 мс для вибуху
+
+      // Відтворення звуку вибуху
+      explosionSound.play();
+
       return;
     }
   }
@@ -326,7 +396,7 @@ function restartGame() {
 }
 
 function startGame() {
-  startScreen.style.display = 'none'; // Hide start screen
+  startScreen.style.display = 'none';
   score = 0;
   missed = 0;
   level = 1;
@@ -342,21 +412,18 @@ function startGame() {
   draw();
 }
 
-// Moved touch event handling here:
 canvas.addEventListener('click', (e) => {
   const rect = canvas.getBoundingClientRect();
   handleTap(e.clientX - rect.left, e.clientY - rect.top);
 });
 
 canvas.addEventListener('touchstart', (e) => {
-  e.preventDefault(); // Prevent default touch actions (zoom, scroll)
+  e.preventDefault();
   const rect = canvas.getBoundingClientRect();
   Array.from(e.touches).forEach((touch) => {
     handleTap(touch.clientX - rect.left, touch.clientY - rect.top);
   });
 });
 </script>
-
-
 </body>
 </html>
