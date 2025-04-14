@@ -341,7 +341,7 @@ function handleTap(x, y) {
     let b = bombs[i];
     if (x >= b.x - hitBoxMargin && x <= b.x + b.width + hitBoxMargin && y >= b.y - hitBoxMargin && y <= b.y + b.height + hitBoxMargin) {
       bombs.splice(i, 1);
-      score -= 20;
+      score -= 100;
       updateScore();
 
       // Вібрація
