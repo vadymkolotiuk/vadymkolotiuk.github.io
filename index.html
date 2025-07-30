@@ -2,428 +2,158 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LK-LOGO</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AR Меню Ресторану</title>
+  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe-ar@master/dist/aframe-ar.min.js"></script>
   <style>
-    html, body {
+    body {
+      font-family: Arial, sans-serif;
       margin: 0;
-      padding: 0;
-      height: 100%;
-      overflow: hidden;
-      background-color: #222;
-      font-family: 'Arial', sans-serif;
-    }
-
-    canvas {
-      display: block;
-      width: 100vw;
-      height: 100vh;
-      background: url('level1.jpg') no-repeat center center;
-      background-size: cover;
-      transition: background 1s ease-in-out;
-    }
-
-    .overlay {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 10;
-      color: white;
-    }
-
-    .score {
-      font-size: 20px;
-      margin-bottom: 5px;
-    }
-
-    .game-over, .pause-screen, .level-up, .start-screen {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 32px;
+      background: #f4f4f4;
       text-align: center;
-      color: white;
-      display: none;
-      z-index: 10;
     }
-
-    .level-up {
-      font-size: 48px;
-      color: yellow;
-      text-shadow: 0 0 20px yellow;
-      animation: zoomFade 2s ease-in-out;
+    h1 {
+      margin: 20px 0;
     }
-
-    .start-screen {
-      display: block;
-      z-index: 100;
+    .menu, .ar-section {
+      transition: opacity 0.5s ease;
     }
-
-    .start-screen button {
-      padding: 15px 30px;
-      font-size: 24px;
-      border: none;
-      border-radius: 10px;
-      background-color: #00d664;
-      color: black;
-      font-weight:bold;
-      cursor: pointer;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.7);
-    }
-
-    @keyframes zoomFade {
-      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.2); }
-      30% { opacity: 1; transform: translate(-50%, -50%) scale(1.3); }
-      70% { opacity: 1; }
-      100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
-    }
-
-    @keyframes flicker {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
-    }
-
-    .flash-effect {
-      position: absolute;
-      width: 100px;
-      height: 100px;
-background: radial-gradient(circle, rgba(0,255,0,0.8) 0%, rgba(0,255,0,0) 70%);
-
+    .hidden {
+      opacity: 0;
       pointer-events: none;
-      animation: flashOut 0.5s forwards;
-      z-index: 1000;
     }
-
-    @keyframes flashOut {
-      from { transform: scale(1); opacity: 1; }
-      to { transform: scale(2); opacity: 0; }
+    .menu-item {
+      background: #fff;
+      margin: 20px auto;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 500px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-
+    .menu-item img {
+      width: 100%;
+      border-radius: 10px;
+    }
     button {
-      padding: 10px 20px;
-      font-size: 18px;
-      margin-top: 10px;
-      border: none;
-      border-radius: 8px;
-      background-color: #444;
+      background: #28a745;
       color: white;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 5px;
       cursor: pointer;
+      margin-top: 10px;
     }
-
-@keyframes screenShake {
-  0% { transform: translate(0px, 0px); }
-  25% { transform: translate(5px, -5px); }
-  50% { transform: translate(-5px, 5px); }
-  75% { transform: translate(5px, 5px); }
-  100% { transform: translate(0px, 0px); }
-}
-
-.shake {
-  animation: screenShake 0.3s;
-}
-
+    button:hover {
+      background: #218838;
+    }
+    .back-btn {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      background: #007bff;
+      color: white;
+    }
+    #loader {
+      display: none;
+      font-size: 18px;
+      color: #555;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
+  <div id="menu" class="menu">
+    <h1>Меню Ресторану</h1>
 
-<canvas id="gameCanvas"></canvas>
+    <div class="menu-item">
+      <h2>Піца Маргарита</h2>
+      <img src="assets/pizza.jpg" alt="Піца Маргарита">
+      <p>Класична піца з моцарелою, томатами та базиліком.</p>
+      <button onclick="addToCart('Піца Маргарита')">Додати в кошик</button>
+      <button onclick="openAR('pizza.glb')">Переглянути в AR</button>
+    </div>
 
-<div class="overlay">
-  <div class="score" id="score">Score: 0</div>
-</div>
+    <div class="menu-item">
+      <h2>Паста Альфредо</h2>
+      <img src="assets/pasta.jpg" alt="Паста Альфредо">
+      <p>Кремова паста з сирним соусом та спеціями.</p>
+      <button onclick="addToCart('Паста Альфредо')">Додати в кошик</button>
+      <button onclick="openAR('pasta.glb')">Переглянути в AR</button>
+    </div>
 
-<div class="game-over" id="gameOver">
-  <p>Game Over</p>
-  <button onclick="restartGame()">Reload</button>
-</div>
+    <div class="menu-item">
+      <h2>Салат Цезар</h2>
+      <img src="assets/salad.jpg" alt="Салат Цезар">
+      <p>Салат з куркою, грінками, сиром та соусом Цезар.</p>
+      <button onclick="addToCart('Салат Цезар')">Додати в кошик</button>
+      <button onclick="openAR('salad.glb')">Переглянути в AR</button>
+    </div>
+  </div>
 
-<div class="level-up" id="levelUpMsg">Level UP!</div>
-
-<div class="start-screen" id="startScreen">
-  <button onclick="startGame()">Start</button>
-</div>
+  <!-- AR сцена -->
+  <div id="ar-scene" class="ar-section hidden" style="display:none;">
+    <button onclick="backToMenu()" class="back-btn">← Назад</button>
+    <div id="loader">Завантаження моделі...</div>
+    <a-scene embedded ar>
+      <a-camera></a-camera>
+      <a-entity id="model" position="0 0 0" scale="1.5 1.5 1.5"></a-entity>
+    </a-scene>
+  </div>
 
 <script>
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
-const scoreDiv = document.getElementById("score");
-const gameOverDiv = document.getElementById("gameOver");
-const levelUpDiv = document.getElementById("levelUpMsg");
-const startScreen = document.getElementById("startScreen");
+  const cart = [];
 
-function resizeCanvas() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
-resizeCanvas();
-window.addEventListener('resize', resizeCanvas);
-
-let score = 0;
-let missed = 0;
-let level = 1;
-let gameOver = false;
-let paused = false;
-
-let logos = [];
-let bombs = [];
-let logoImages = ['logo1.png', 'logo2.png', 'logo3.png'];
-let fastMode = false;
-let levelImages = ['level1.jpg', 'level2.jpg', 'level3.jpg', 'level4.jpg'];
-
-let levelSpeed = 1;
-
-// Звуковий файл вибуху
-const explosionSound = new Audio('explosion.mp3'); // Завантаження звуку вибуху
-
-class GameObject {
-  constructor(x, y, width, height, src, speed) {
-    this.x = x;
-    this.y = y;
-    this.width = width;
-    this.height = height;
-    this.image = new Image();
-    this.image.src = src;
-    this.speed = speed;
-    this.loaded = false;
-    this.image.onload = () => this.loaded = true;
-    this.isBonus = false;
-    this.isBomb = false;
+  function addToCart(itemName) {
+    console.log(`[addToCart] Спроба додати: ${itemName}`);
+    cart.push(itemName);
+    alert(`Додано до кошика: ${itemName}`);
+    localStorage.setItem('cart', JSON.stringify(cart));
+    console.log(`[addToCart] Кошик зараз: ${JSON.stringify(cart)}`);
   }
 
-  move() {
-    this.y += this.speed;
+  function openAR(modelFile) {
+    console.log(`[openAR] Спроба відкрити AR для моделі: ${modelFile}`);
+    document.getElementById('menu').style.display = 'none';
+    
+    const arScene = document.getElementById('ar-scene');
+    arScene.style.display = 'block';
+    setTimeout(() => {
+      arScene.classList.remove('hidden');
+      console.log('[openAR] AR-сцена показана');
+    }, 10);
+
+    document.getElementById('loader').style.display = 'block';
+    console.log('[openAR] Показано завантажувач моделі');
+
+    const model = document.getElementById('model');
+    model.setAttribute('gltf-model', `models/${modelFile}`);
+    console.log(`[openAR] Встановлено шлях до моделі: models/${modelFile}`);
+
+    model.addEventListener('model-loaded', () => {
+      document.getElementById('loader').style.display = 'none';
+      console.log('[model-loaded] Модель успішно завантажена');
+    });
+
+    model.addEventListener('model-error', (e) => {
+      console.error('[model-error] Помилка завантаження моделі:', e);
+      alert('Помилка завантаження моделі');
+      backToMenu();
+    });
   }
 
-  draw() {
-    if (this.loaded) {
-      if (this.isBonus) {
-        ctx.save();
-        ctx.globalAlpha = 0.5 + 0.5 * Math.sin(Date.now() / 200);
-        ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
-        ctx.restore();
-      } else {
-        ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
-      }
-    }
+  function backToMenu() {
+    console.log('[backToMenu] Повернення до меню');
+    const arScene = document.getElementById('ar-scene');
+    arScene.classList.add('hidden');
+
+    setTimeout(() => {
+      arScene.style.display = 'none';
+      document.getElementById('menu').style.display = 'block';
+      console.log('[backToMenu] Меню показано, AR-сцена прихована');
+    }, 500);
   }
-}
-
-function getRandomSize() {
-  const baseHeight = Math.max(window.innerHeight, window.innerWidth) / 25;
-  const height = Math.random() * (baseHeight * 1.2 - baseHeight * 0.6) + baseHeight * 0.6;
-  const width = height * 2;
-  return {
-    width: Math.min(width, canvas.width * 0.25),
-    height: Math.min(height, canvas.height * 0.15)
-  };
-}
-
-function spawnLogo() {
-  if (gameOver || paused) return;
-  const count = Math.floor(Math.random() * (level + 1)) + 1;
-  for (let i = 0; i < count; i++) {
-    const { width, height } = getRandomSize();
-    const x = Math.random() * (canvas.width - width);
-    const y = -height;
-    const speed = Math.random() * levelSpeed + 3 + level * 0.3;
-    const logo = new GameObject(x, y, width, height, logoImages[Math.floor(Math.random() * logoImages.length)], speed);
-    logos.push(logo);
-  }
-  setTimeout(spawnLogo, Math.random() * 1000 + 500);
-}
-
-function spawnBomb() {
-  if (gameOver || paused) return;
-  const count = Math.floor(Math.random() * level / 2) + 1;
-  for (let i = 0; i < count; i++) {
-    const { width, height } = getRandomSize();
-    const x = Math.random() * (canvas.width - width);
-    const y = -height;
-    const speed = Math.random() * levelSpeed + 3 + level * 0.3;
-    const bomb = new GameObject(x, y, width, height, 'bomb.png', speed);
-    bomb.isBomb = true;
-    bombs.push(bomb);
-  }
-  setTimeout(spawnBomb, Math.random() * 4000 + 3000);
-}
-
-function spawnBonus() {
-  if (gameOver || paused) return;
-  const { width, height } = getRandomSize();
-  const x = Math.random() * (canvas.width - width);
-  const y = -height;
-  const bonus = new GameObject(x, y, width, height, 'bonus.png', levelSpeed);
-  bonus.isBonus = true;
-  logos.push(bonus);
-  setTimeout(spawnBonus, Math.random() * 15000 + 10000);
-}
-
-function createFlash(x, y) {
-  const flash = document.createElement('div');
-  flash.className = 'flash-effect';
-  flash.style.left = `${x - 50}px`;
-  flash.style.top = `${y - 50}px`;
-  document.body.appendChild(flash);
-  setTimeout(() => flash.remove(), 500);
-}
-
-function draw() {
-  if (gameOver || paused) return;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  logos.forEach((logo, index) => {
-    logo.move();
-    logo.draw();
-    if (logo.y > canvas.height) {
-      logos.splice(index, 1);
-      missed++;
-      score -= 5;
-      updateScore();
-      if (missed >= 5) endGame();
-    }
-  });
-
-  bombs.forEach((bomb, index) => {
-    bomb.move();
-    bomb.draw();
-    if (bomb.y > canvas.height) bombs.splice(index, 1);
-  });
-
-  requestAnimationFrame(draw);
-}
-
-function updateScore() {
-  scoreDiv.textContent = "Очки: " + score;
-  checkLevelUp();
-}
-
-function checkLevelUp() {
-  let newLevel = 1;
-  if (score >= 10000) newLevel = 5;
-  else if (score >= 5000) newLevel = 4;
-  else if (score >= 2000) newLevel = 3;
-  else if (score >= 1000) newLevel = 2;
-
-  if (newLevel > level) {
-    level = newLevel;
-    levelSpeed = 3 + level * 0.5;
-    Background();
-    levelUpAnimation();
-  }
-}
-
-function levelUpAnimation() {
-  levelUpDiv.style.display = 'block';
-  setTimeout(() => levelUpDiv.style.display = 'none', 2000);
-}
-
-function Background() {
-  canvas.style.backgroundImage = `url('${levelImages[level - 1]}')`;
-}
-
-function handleTap(x, y) {
-  if (gameOver || paused) return;
-  const hitBoxMargin = 20;
-
-  for (let i = 0; i < logos.length; i++) {
-    let l = logos[i];
-    if (x >= l.x - hitBoxMargin && x <= l.x + l.width + hitBoxMargin && y >= l.y - hitBoxMargin && y <= l.y + l.height + hitBoxMargin) {
-      logos.splice(i, 1);
-      score += l.isBonus ? 50 : 10;
-      updateScore();
-      createFlash(x, y);
-      return;
-    }
-  }
-
-  for (let i = 0; i < bombs.length; i++) {
-    let b = bombs[i];
-    if (x >= b.x - hitBoxMargin && x <= b.x + b.width + hitBoxMargin && y >= b.y - hitBoxMargin && y <= b.y + b.height + hitBoxMargin) {
-      bombs.splice(i, 1);
-      score -= 100;
-      updateScore();
-
-      // Вібрація
-      if (navigator.vibrate) navigator.vibrate(200);
-
-      // Ефект тряски
-      canvas.classList.add("shake");
-      setTimeout(() => {
-        canvas.classList.remove("shake");
-      }, 300);
-
-      // Анімація вибуху
-      canvas.classList.add("explosion-effect");
-      setTimeout(() => {
-        canvas.classList.remove("explosion-effect");
-      }, 500); // 500 мс для вибуху
-
-      // Відтворення звуку вибуху
-      explosionSound.play();
-
-      return;
-    }
-  }
-}
-
-function togglePause() {
-  paused = !paused;
-  if (!paused) {
-    draw();
-  }
-}
-
-function endGame() {
-  gameOver = true;
-  gameOverDiv.style.display = 'block';
-}
-
-function restartGame() {
-  score = 0;
-  missed = 0;
-  level = 1;
-  paused = false;
-  gameOver = false;
-  logos = [];
-  bombs = [];
-  updateScore();
-  gameOverDiv.style.display = 'none';
-  spawnLogo();
-  spawnBomb();
-  spawnBonus();
-  draw();
-}
-
-function startGame() {
-  startScreen.style.display = 'none';
-  score = 0;
-  missed = 0;
-  level = 1;
-  paused = false;
-  gameOver = false;
-  logos = [];
-  bombs = [];
-  updateScore();
-  gameOverDiv.style.display = 'none';
-  spawnLogo();
-  spawnBomb();
-  spawnBonus();
-  draw();
-}
-
-canvas.addEventListener('click', (e) => {
-  const rect = canvas.getBoundingClientRect();
-  handleTap(e.clientX - rect.left, e.clientY - rect.top);
-});
-
-canvas.addEventListener('touchstart', (e) => {
-  e.preventDefault();
-  const rect = canvas.getBoundingClientRect();
-  Array.from(e.touches).forEach((touch) => {
-    handleTap(touch.clientX - rect.left, touch.clientY - rect.top);
-  });
-});
 </script>
+
 </body>
 </html>
