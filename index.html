@@ -1,126 +1,117 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AR Меню Ресторану</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AR Модель у Центрі</title>
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.3.2/aframe/build/aframe-ar.min.js"></script>
   <style>
     body, html {
-      margin: 0; padding: 0; overflow: hidden; font-family: Arial, sans-serif;
+      margin: 0;
+      overflow: hidden;
+      font-family: sans-serif;
     }
-    #menu {
-      padding: 20px; max-width: 600px; margin: auto; background: #f4f4f4; text-align: center;
-    }
-    .menu-item {
-      background: white; margin-bottom: 20px; padding: 15px; border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    .menu-item img {
-      max-width: 100%; border-radius: 10px;
+    #ar-container {
+      width: 100vw;
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      left: 0;
+      background: transparent;
+      z-index: 10;
     }
     button {
-      margin-top: 10px;
-      background: #28a745; color: white; padding: 10px 16px;
-      border: none; border-radius: 6px; cursor: pointer;
-    }
-    button:hover { background: #218838; }
-    #ar-container {
-      display: none; position: fixed; top: 0; left: 0;
-      width: 100vw; height: 100vh; z-index: 100; background: transparent;
-    }
-    .back-btn {
-      position: absolute; top: 15px; left: 15px; z-index: 110;
-      background: #007bff; color: white; padding: 10px 16px;
-      border-radius: 6px; border: none; cursor: pointer;
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 20;
+      padding: 10px 16px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
     }
     canvas { touch-action: none; }
   </style>
 </head>
 <body>
 
-<div id="menu">
-  <h1>Меню Ресторану</h1>
-
-  <div class="menu-item">
-    <h2>Піца Маргарита</h2>
-    <img src="assets/pizza.jpg" alt="Піца Маргарита">
-    <p>Класична піца з моцарелою, томатами та базиліком.</p>
-    <button onclick="startAR('pizza.glb')">Переглянути в AR</button>
-  </div>
-
-  <div class="menu-item">
-    <h2>Паста Альфредо</h2>
-    <img src="assets/pasta.jpg" alt="Паста Альфредо">
-    <p>Кремова паста з сирним соусом та спеціями.</p>
-    <button onclick="startAR('pasta.glb')">Переглянути в AR</button>
-  </div>
-</div>
-
 <div id="ar-container">
-  <button class="back-btn" onclick="stopAR()">← Назад</button>
-  <a-scene embedded vr-mode-ui="enabled: false"
-           renderer="alpha: true; antialias: true; logarithmicDepthBuffer: true;"
-           arjs="sourceType: webcam; debugUIEnabled: false;">
+  <button onclick="exitAR()">← Назад</button>
+  <a-scene
+    embedded
+    arjs="sourceType: webcam; debugUIEnabled: false;"
+    renderer="alpha: true; antialias: true; logarithmicDepthBuffer: true;"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false">
+
     <a-camera position="0 0 0" look-controls="enabled: false" wasd-controls="enabled: false"></a-camera>
-    <a-entity id="model-wrapper" position="0 0 -1.5" rotation="0 0 0">
-      <a-entity id="model" scale="1.5 1.5 1.5"></a-entity>
+
+    <a-entity id="wrapper" position="0 0 -1.5" rotation="0 0 0">
+      <a-entity id="model" scale="1 1 1"></a-entity>
     </a-entity>
   </a-scene>
 </div>
 
 <script>
-  let modelLoaded = false;
-  let rotationY = 0;
+  const wrapper = document.getElementById('wrapper');
+  const model = document.getElementById('model');
+
+  let rotateX = 0, rotateY = 0, rotateZ = 0;
   let dragging = false;
-  let lastX = 0;
+  let lastX = 0, lastY = 0;
 
-  function startAR(modelFile) {
-    document.getElementById('menu').style.display = 'none';
-    document.getElementById('ar-container').style.display = 'block';
+  // Load your model here
+  model.setAttribute('gltf-model', 'models/pizza.glb');
 
-    const mdl = document.getElementById('model');
-    const wrapper = document.getElementById('model-wrapper');
-    mdl.setAttribute('gltf-model', `models/${modelFile}`);
-    modelLoaded = false;
+  model.addEventListener('model-loaded', () => {
+    const mesh = model.getObject3D('mesh');
+    if (!mesh) return;
 
-    mdl.addEventListener('model-loaded', () => {
-      if (modelLoaded) return;
-      modelLoaded = true;
-      const mesh = mdl.getObject3D('mesh');
-      if (!mesh) return;
+    const box = new THREE.Box3().setFromObject(mesh);
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+    mesh.position.sub(center); // Центруємо
 
-      // Центрування
-      const box = new THREE.Box3().setFromObject(mesh);
-      const center = new THREE.Vector3();
-      box.getCenter(center);
-      mesh.position.sub(center);
+    // Автоматичне масштабування
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const scaleFactor = 1.2 / maxDim;
+    model.setAttribute('scale', `${scaleFactor} ${scaleFactor} ${scaleFactor}`);
+  });
 
-      // При потребі можна змінити масштаби: наприклад 2.0
-      mdl.setAttribute('scale', '2 2 2');
-    });
+  // Обертання по X, Y, Z
+  const canvas = document.querySelector('canvas');
+  canvas.addEventListener('pointerdown', (e) => {
+    dragging = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+  });
 
-    const canvas = document.querySelector('canvas');
-    canvas.onpointerdown = e => {
-      dragging = true;
-      lastX = e.clientX;
-    };
-    canvas.onpointerup = canvas.onpointerleave = () => dragging = false;
-    canvas.onpointermove = e => {
-      if (!dragging) return;
-      const dx = e.clientX - lastX;
-      lastX = e.clientX;
-      rotationY += dx * 0.5;
-      wrapper.setAttribute('rotation', `0 ${rotationY} 0`);
-    };
-  }
+  canvas.addEventListener('pointerup', () => dragging = false);
+  canvas.addEventListener('pointerleave', () => dragging = false);
 
-  function stopAR() {
+  canvas.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - lastX;
+    const dy = e.clientY - lastY;
+    lastX = e.clientX;
+    lastY = e.clientY;
+
+    rotateY += dx * 0.4;
+    rotateX -= dy * 0.4;
+
+    wrapper.setAttribute('rotation', `${rotateX} ${rotateY} ${rotateZ}`);
+  });
+
+  function exitAR() {
     document.getElementById('ar-container').style.display = 'none';
-    document.getElementById('menu').style.display = 'block';
-    document.getElementById('model').removeAttribute('gltf-model');
-    rotationY = 0;
+    model.removeAttribute('gltf-model');
+    rotateX = rotateY = rotateZ = 0;
+    wrapper.setAttribute('rotation', '0 0 0');
   }
 </script>
 
