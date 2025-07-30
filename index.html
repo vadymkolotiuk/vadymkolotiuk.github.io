@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AR Меню Ресторану</title>
   <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.3.2/aframe/build/aframe-ar.min.js"></script>
   <style>
     body, html {
       margin: 0; padding: 0; overflow: hidden; font-family: Arial, sans-serif;
@@ -40,6 +41,8 @@
   </style>
 </head>
 <body>
+
+  <!-- Меню -->
   <div id="menu">
     <h1>Меню Ресторану</h1>
 
@@ -65,11 +68,17 @@
     </div>
   </div>
 
+  <!-- AR-сцена -->
   <div id="ar-scene">
     <button class="back-btn" onclick="closeAR()">← Назад</button>
-    <a-scene embedded xrweb arjs='sourceType: webcam;' renderer="logarithmicDepthBuffer: true" background="color: transparent" vr-mode-ui="enabled: false">
-      <a-camera position="0 1.6 3" look-controls wasd-controls="enabled: false"></a-camera>
-      <a-entity id="model" position="0 1 -2" rotation="0 45 0" scale="1.5 1.5 1.5"></a-entity>
+
+    <a-scene embedded arjs="sourceType: webcam;" vr-mode-ui="enabled: false" renderer="logarithmicDepthBuffer: true" background="color: transparent">
+      <a-camera position="0 1.6 3" look-controls="enabled: false" wasd-controls="enabled: false"></a-camera>
+
+      <!-- Контейнер для обертання -->
+      <a-entity id="model-wrapper" position="0 1 -2" rotation="0 0 0">
+        <a-entity id="model" scale="1.5 1.5 1.5"></a-entity>
+      </a-entity>
     </a-scene>
   </div>
 
@@ -80,41 +89,53 @@
     arScene.style.display = 'block';
 
     const model = document.getElementById('model');
+    const wrapper = document.getElementById('model-wrapper');
     model.setAttribute('gltf-model', `models/${modelFile}`);
 
-    // Проста обробка кручення пальцем/мишею
-    let rotationY = 45;
+    // Центруємо модель після завантаження
+    model.addEventListener('model-loaded', () => {
+      const mesh = model.getObject3D('mesh');
+      if (!mesh) return;
+
+      const box = new THREE.Box3().setFromObject(mesh);
+      const center = new THREE.Vector3();
+      box.getCenter(center);
+
+      // Компенсуємо центр
+      mesh.position.sub(center);
+      mesh.updateMatrixWorld();
+      console.log('[model-loaded] Центр моделі зрушено на', center);
+    });
+
+    // Кручення
+    let rotationY = 0;
     let isDragging = false;
     let lastX = 0;
 
     const canvas = arScene.querySelector('canvas');
-    canvas.style.touchAction = 'none'; // вимикаємо скролл на дотиках
+    canvas.style.touchAction = 'none';
 
-    canvas.addEventListener('pointerdown', (e) => {
+    canvas.onpointerdown = (e) => {
       isDragging = true;
       lastX = e.clientX;
-    });
-    canvas.addEventListener('pointerup', () => {
-      isDragging = false;
-    });
-    canvas.addEventListener('pointerleave', () => {
-      isDragging = false;
-    });
-    canvas.addEventListener('pointermove', (e) => {
+    };
+    canvas.onpointerup = () => isDragging = false;
+    canvas.onpointerleave = () => isDragging = false;
+    canvas.onpointermove = (e) => {
       if (!isDragging) return;
-      let deltaX = e.clientX - lastX;
+      const deltaX = e.clientX - lastX;
       lastX = e.clientX;
       rotationY += deltaX * 0.5;
-      model.setAttribute('rotation', `0 ${rotationY} 0`);
-    });
+      wrapper.setAttribute('rotation', `0 ${rotationY} 0`);
+    };
   }
 
   function closeAR() {
     document.getElementById('ar-scene').style.display = 'none';
     document.getElementById('menu').style.display = 'block';
-    const model = document.getElementById('model');
-    model.removeAttribute('gltf-model'); // прибираємо модель, щоб звільнити пам'ять
+    document.getElementById('model').removeAttribute('gltf-model');
   }
 </script>
+
 </body>
 </html>
