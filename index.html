@@ -2,207 +2,119 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AR Меню Ресторану</title>
   <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      background: #f4f4f4;
+    body, html {
+      margin: 0; padding: 0; overflow: hidden; font-family: Arial, sans-serif;
+    }
+    #menu {
+      padding: 20px; max-width: 600px; margin: auto; background: #f4f4f4;
       text-align: center;
-      overflow: hidden;
-    }
-    h1 {
-      margin: 20px 0;
-    }
-    .menu, .ar-section {
-      transition: opacity 0.5s ease;
-    }
-    .hidden {
-      opacity: 0;
-      pointer-events: none;
     }
     .menu-item {
-      background: #fff;
-      margin: 20px auto;
-      padding: 20px;
-      border-radius: 10px;
-      max-width: 500px;
+      background: white; margin-bottom: 20px; padding: 15px; border-radius: 10px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     .menu-item img {
-      width: 100%;
-      border-radius: 10px;
+      max-width: 100%; border-radius: 10px;
     }
     button {
-      background: #28a745;
-      color: white;
-      padding: 10px 16px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-top: 10px;
+      margin: 10px 5px 0 5px;
+      background: #28a745; color: white; border: none; padding: 10px 15px;
+      border-radius: 6px; cursor: pointer;
     }
     button:hover {
       background: #218838;
     }
-    .back-btn {
-      position: absolute;
-      top: 15px;
-      left: 15px;
-      background: #007bff;
-      color: white;
-      z-index: 10;
-    }
-    #loader {
-      display: none;
-      font-size: 18px;
-      color: #555;
-      margin-top: 10px;
-    }
-    /* A-Frame full screen */
-    #ar-scene a-scene {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw;
-      height: 100vh;
-      z-index: 5;
+    #ar-scene {
+      display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 10;
       background: transparent;
+    }
+    .back-btn {
+      position: absolute; top: 15px; left: 15px; z-index: 15;
+      background: #007bff; color: white; border: none; padding: 10px 15px;
+      border-radius: 6px; cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <div id="menu" class="menu">
+  <div id="menu">
     <h1>Меню Ресторану</h1>
 
     <div class="menu-item">
       <h2>Піца Маргарита</h2>
-      <img src="assets/pizza.jpg" alt="Піца Маргарита">
+      <img src="assets/pizza.jpg" alt="Піца Маргарита" />
       <p>Класична піца з моцарелою, томатами та базиліком.</p>
-      <button onclick="addToCart('Піца Маргарита')">Додати в кошик</button>
       <button onclick="openAR('pizza.glb')">Переглянути в AR</button>
     </div>
 
     <div class="menu-item">
       <h2>Паста Альфредо</h2>
-      <img src="assets/pasta.jpg" alt="Паста Альфредо">
+      <img src="assets/pasta.jpg" alt="Паста Альфредо" />
       <p>Кремова паста з сирним соусом та спеціями.</p>
-      <button onclick="addToCart('Паста Альфредо')">Додати в кошик</button>
       <button onclick="openAR('pasta.glb')">Переглянути в AR</button>
     </div>
 
     <div class="menu-item">
       <h2>Салат Цезар</h2>
-      <img src="assets/salad.jpg" alt="Салат Цезар">
+      <img src="assets/salad.jpg" alt="Салат Цезар" />
       <p>Салат з куркою, грінками, сиром та соусом Цезар.</p>
-      <button onclick="addToCart('Салат Цезар')">Додати в кошик</button>
       <button onclick="openAR('salad.glb')">Переглянути в AR</button>
     </div>
   </div>
 
-  <!-- AR сцена -->
-  <div id="ar-scene" class="ar-section hidden" style="display:none;">
-    <button onclick="backToMenu()" class="back-btn">← Назад</button>
-    <div id="loader">Завантаження моделі...</div>
-    <a-scene embedded vr-mode-ui="enabled: false" xrweb arjs='sourceType: webcam;' renderer="logarithmicDepthBuffer: true; colorManagement: true" background="color: transparent">
+  <div id="ar-scene">
+    <button class="back-btn" onclick="closeAR()">← Назад</button>
+    <a-scene embedded xrweb arjs='sourceType: webcam;' renderer="logarithmicDepthBuffer: true" background="color: transparent" vr-mode-ui="enabled: false">
       <a-camera position="0 1.6 3" look-controls wasd-controls="enabled: false"></a-camera>
-
-      <a-entity id="model" 
-                position="0 1 -2" 
-                rotation="0 45 0" 
-                scale="1.5 1.5 1.5" 
-                gltf-model=""
-                gesture-handler>
-      </a-entity>
+      <a-entity id="model" position="0 1 -2" rotation="0 45 0" scale="1.5 1.5 1.5"></a-entity>
     </a-scene>
   </div>
 
 <script>
-  const cart = [];
-
-  function addToCart(itemName) {
-    console.log(`[addToCart] Спроба додати: ${itemName}`);
-    cart.push(itemName);
-    alert(`Додано до кошика: ${itemName}`);
-    localStorage.setItem('cart', JSON.stringify(cart));
-    console.log(`[addToCart] Кошик зараз: ${JSON.stringify(cart)}`);
-  }
-
   function openAR(modelFile) {
-    console.log(`[openAR] Спроба відкрити AR для моделі: ${modelFile}`);
     document.getElementById('menu').style.display = 'none';
-    
     const arScene = document.getElementById('ar-scene');
     arScene.style.display = 'block';
-    setTimeout(() => {
-      arScene.classList.remove('hidden');
-      console.log('[openAR] AR-сцена показана');
-    }, 10);
-
-    document.getElementById('loader').style.display = 'block';
 
     const model = document.getElementById('model');
     model.setAttribute('gltf-model', `models/${modelFile}`);
 
-    model.addEventListener('model-loaded', () => {
-      document.getElementById('loader').style.display = 'none';
-      console.log('[model-loaded] Модель успішно завантажена');
-    });
+    // Проста обробка кручення пальцем/мишею
+    let rotationY = 45;
+    let isDragging = false;
+    let lastX = 0;
 
-    model.addEventListener('model-error', (e) => {
-      console.error('[model-error] Помилка завантаження моделі:', e);
-      alert('Помилка завантаження моделі');
-      backToMenu();
+    const canvas = arScene.querySelector('canvas');
+    canvas.style.touchAction = 'none'; // вимикаємо скролл на дотиках
+
+    canvas.addEventListener('pointerdown', (e) => {
+      isDragging = true;
+      lastX = e.clientX;
+    });
+    canvas.addEventListener('pointerup', () => {
+      isDragging = false;
+    });
+    canvas.addEventListener('pointerleave', () => {
+      isDragging = false;
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      if (!isDragging) return;
+      let deltaX = e.clientX - lastX;
+      lastX = e.clientX;
+      rotationY += deltaX * 0.5;
+      model.setAttribute('rotation', `0 ${rotationY} 0`);
     });
   }
 
-  function backToMenu() {
-    console.log('[backToMenu] Повернення до меню');
-    const arScene = document.getElementById('ar-scene');
-    arScene.classList.add('hidden');
-
-    setTimeout(() => {
-      arScene.style.display = 'none';
-      document.getElementById('menu').style.display = 'block';
-      console.log('[backToMenu] Меню показано, AR-сцена прихована');
-    }, 500);
+  function closeAR() {
+    document.getElementById('ar-scene').style.display = 'none';
+    document.getElementById('menu').style.display = 'block';
+    const model = document.getElementById('model');
+    model.removeAttribute('gltf-model'); // прибираємо модель, щоб звільнити пам'ять
   }
-
-  // Додамо обробник жестів для кручення/масштабування моделі
-  AFRAME.registerComponent('gesture-handler', {
-    schema: { },
-
-    init: function () {
-      this.initialRotation = null;
-      this.currentRotation = 0;
-      this.el.sceneEl.canvas.addEventListener('touchstart', this.onTouchStart.bind(this), { passive: false });
-      this.el.sceneEl.canvas.addEventListener('touchmove', this.onTouchMove.bind(this), { passive: false });
-
-      this.lastTouchX = null;
-    },
-
-    onTouchStart: function (event) {
-      if(event.touches.length === 1) {
-        this.lastTouchX = event.touches[0].clientX;
-      }
-    },
-
-    onTouchMove: function (event) {
-      if(event.touches.length === 1) {
-        event.preventDefault(); // запобігаємо прокрутці сторінки
-
-        const touch = event.touches[0];
-        let deltaX = touch.clientX - this.lastTouchX;
-        this.lastTouchX = touch.clientX;
-
-        this.currentRotation += deltaX * 0.5; // керування швидкістю кручення
-        this.el.setAttribute('rotation', `0 ${this.currentRotation} 0`);
-      }
-    }
-  });
 </script>
-
 </body>
 </html>
