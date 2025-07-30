@@ -49,6 +49,11 @@
 
     <a-camera position="0 0 0" look-controls="enabled: false" wasd-controls="enabled: false"></a-camera>
 
+    <!-- Освітлення -->
+    <a-light type="ambient" intensity="0.8"></a-light>
+    <a-light type="directional" intensity="0.5" position="1 1 0.5"></a-light>
+
+    <!-- Обʼєкт для обертання -->
     <a-entity id="wrapper" position="0 0 -1.5" rotation="0 0 0">
       <a-entity id="model" scale="1 1 1"></a-entity>
     </a-entity>
@@ -63,9 +68,10 @@
   let dragging = false;
   let lastX = 0, lastY = 0;
 
-  // Load your model here
+  // Завантаження моделі
   model.setAttribute('gltf-model', 'models/pizza.glb');
 
+  // Центрування і масштабування моделі
   model.addEventListener('model-loaded', () => {
     const mesh = model.getObject3D('mesh');
     if (!mesh) return;
@@ -73,9 +79,8 @@
     const box = new THREE.Box3().setFromObject(mesh);
     const center = new THREE.Vector3();
     box.getCenter(center);
-    mesh.position.sub(center); // Центруємо
+    mesh.position.sub(center);
 
-    // Автоматичне масштабування
     const size = new THREE.Vector3();
     box.getSize(size);
     const maxDim = Math.max(size.x, size.y, size.z);
@@ -83,28 +88,35 @@
     model.setAttribute('scale', `${scaleFactor} ${scaleFactor} ${scaleFactor}`);
   });
 
-  // Обертання по X, Y, Z
-  const canvas = document.querySelector('canvas');
-  canvas.addEventListener('pointerdown', (e) => {
-    dragging = true;
-    lastX = e.clientX;
-    lastY = e.clientY;
-  });
+  // Очікуємо, поки сцена завантажиться
+  document.querySelector('a-scene').addEventListener('loaded', () => {
+    const canvas = document.querySelector('a-scene').canvas;
+    if (!canvas) {
+      console.warn('Canvas не знайдено!');
+      return;
+    }
 
-  canvas.addEventListener('pointerup', () => dragging = false);
-  canvas.addEventListener('pointerleave', () => dragging = false);
+    canvas.addEventListener('pointerdown', (e) => {
+      dragging = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+    });
 
-  canvas.addEventListener('pointermove', (e) => {
-    if (!dragging) return;
-    const dx = e.clientX - lastX;
-    const dy = e.clientY - lastY;
-    lastX = e.clientX;
-    lastY = e.clientY;
+    canvas.addEventListener('pointerup', () => dragging = false);
+    canvas.addEventListener('pointerleave', () => dragging = false);
 
-    rotateY += dx * 0.4;
-    rotateX -= dy * 0.4;
+    canvas.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      lastX = e.clientX;
+      lastY = e.clientY;
 
-    wrapper.setAttribute('rotation', `${rotateX} ${rotateY} ${rotateZ}`);
+      rotateY += dx * 0.4;
+      rotateX -= dy * 0.4;
+
+      wrapper.setAttribute('rotation', `${rotateX} ${rotateY} ${rotateZ}`);
+    });
   });
 
   function exitAR() {
