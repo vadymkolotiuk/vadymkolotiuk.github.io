@@ -3,62 +3,38 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AR Модель у Центрі</title>
+  <title>AR з маркером (Hiro)</title>
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.3.2/aframe/build/aframe-ar.min.js"></script>
   <style>
     body, html {
       margin: 0;
       overflow: hidden;
-      font-family: sans-serif;
-    }
-    #ar-container {
-      width: 100vw;
-      height: 100vh;
-      position: fixed;
-      top: 0;
-      left: 0;
-      background: transparent;
-      z-index: 10;
-    }
-    button {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      z-index: 20;
-      padding: 10px 16px;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
     }
     canvas { touch-action: none; }
   </style>
 </head>
 <body>
 
-<div id="ar-container">
-  <button onclick="exitAR()">← Назад</button>
-  <a-scene
-    embedded
-    arjs="sourceType: webcam; debugUIEnabled: false;"
-    renderer="alpha: true; antialias: true; logarithmicDepthBuffer: true;"
-    vr-mode-ui="enabled: false"
-    device-orientation-permission-ui="enabled: false">
+<a-scene
+  embedded
+  arjs="sourceType: webcam; debugUIEnabled: false;"
+  renderer="alpha: true; antialias: true"
+  vr-mode-ui="enabled: false">
 
-    <a-camera position="0 0 0" look-controls="enabled: false" wasd-controls="enabled: false"></a-camera>
+  <!-- Освітлення -->
+  <a-light type="ambient" intensity="0.8"></a-light>
+  <a-light type="directional" intensity="0.6" position="1 1 1"></a-light>
 
-    <!-- Освітлення -->
-    <a-light type="ambient" intensity="0.8"></a-light>
-    <a-light type="directional" intensity="0.5" position="1 1 0.5"></a-light>
-
-    <!-- Обʼєкт для обертання -->
-    <a-entity id="wrapper" position="0 0 -1.5" rotation="0 0 0">
-      <a-entity id="model" scale="1 1 1"></a-entity>
+  <!-- Hiro-маркер -->
+  <a-marker preset="hiro">
+    <a-entity id="wrapper" rotation="0 0 0">
+      <a-entity id="model" gltf-model="models/pizza.glb" scale="1 1 1"></a-entity>
     </a-entity>
-  </a-scene>
-</div>
+  </a-marker>
+
+  <a-entity camera></a-entity>
+</a-scene>
 
 <script>
   const wrapper = document.getElementById('wrapper');
@@ -68,33 +44,28 @@
   let dragging = false;
   let lastX = 0, lastY = 0;
 
-  // Завантаження моделі
-  model.setAttribute('gltf-model', 'models/pizza.glb');
-
-  // Центрування і масштабування моделі
   model.addEventListener('model-loaded', () => {
     const mesh = model.getObject3D('mesh');
     if (!mesh) return;
 
+    // Центрування
     const box = new THREE.Box3().setFromObject(mesh);
     const center = new THREE.Vector3();
     box.getCenter(center);
     mesh.position.sub(center);
 
+    // Автомасштабування
     const size = new THREE.Vector3();
     box.getSize(size);
     const maxDim = Math.max(size.x, size.y, size.z);
-    const scaleFactor = 1.2 / maxDim;
+    const scaleFactor = 1 / maxDim;
     model.setAttribute('scale', `${scaleFactor} ${scaleFactor} ${scaleFactor}`);
   });
 
-  // Очікуємо, поки сцена завантажиться
+  // Обертання моделі
   document.querySelector('a-scene').addEventListener('loaded', () => {
     const canvas = document.querySelector('a-scene').canvas;
-    if (!canvas) {
-      console.warn('Canvas не знайдено!');
-      return;
-    }
+    if (!canvas) return;
 
     canvas.addEventListener('pointerdown', (e) => {
       dragging = true;
@@ -114,17 +85,9 @@
 
       rotateY += dx * 0.4;
       rotateX -= dy * 0.4;
-
       wrapper.setAttribute('rotation', `${rotateX} ${rotateY} ${rotateZ}`);
     });
   });
-
-  function exitAR() {
-    document.getElementById('ar-container').style.display = 'none';
-    model.removeAttribute('gltf-model');
-    rotateX = rotateY = rotateZ = 0;
-    wrapper.setAttribute('rotation', '0 0 0');
-  }
 </script>
 
 </body>
