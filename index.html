@@ -4,15 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AR Меню Ресторану</title>
-  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.3.2/aframe/build/aframe-ar.min.js"></script>
   <style>
     body, html {
       margin: 0; padding: 0; overflow: hidden; font-family: Arial, sans-serif;
     }
     #menu {
-      padding: 20px; max-width: 600px; margin: auto; background: #f4f4f4;
-      text-align: center;
+      padding: 20px; max-width: 600px; margin: auto; background: #f4f4f4; text-align: center;
     }
     .menu-item {
       background: white; margin-bottom: 20px; padding: 15px; border-radius: 10px;
@@ -22,118 +21,106 @@
       max-width: 100%; border-radius: 10px;
     }
     button {
-      margin: 10px 5px 0 5px;
-      background: #28a745; color: white; border: none; padding: 10px 15px;
-      border-radius: 6px; cursor: pointer;
+      margin-top: 10px;
+      background: #28a745; color: white; padding: 10px 16px;
+      border: none; border-radius: 6px; cursor: pointer;
     }
-    button:hover {
-      background: #218838;
-    }
-    #ar-scene {
-      display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 10;
-      background: transparent;
+    button:hover { background: #218838; }
+    #ar-container {
+      display: none; position: fixed; top: 0; left: 0;
+      width: 100vw; height: 100vh; z-index: 100; background: transparent;
     }
     .back-btn {
-      position: absolute; top: 15px; left: 15px; z-index: 15;
-      background: #007bff; color: white; border: none; padding: 10px 15px;
-      border-radius: 6px; cursor: pointer;
+      position: absolute; top: 15px; left: 15px; z-index: 110;
+      background: #007bff; color: white; padding: 10px 16px;
+      border-radius: 6px; border: none; cursor: pointer;
     }
+    canvas { touch-action: none; }
   </style>
 </head>
 <body>
 
-  <!-- Меню -->
-  <div id="menu">
-    <h1>Меню Ресторану</h1>
+<div id="menu">
+  <h1>Меню Ресторану</h1>
 
-    <div class="menu-item">
-      <h2>Піца Маргарита</h2>
-      <img src="assets/pizza.jpg" alt="Піца Маргарита" />
-      <p>Класична піца з моцарелою, томатами та базиліком.</p>
-      <button onclick="openAR('pizza.glb')">Переглянути в AR</button>
-    </div>
-
-    <div class="menu-item">
-      <h2>Паста Альфредо</h2>
-      <img src="assets/pasta.jpg" alt="Паста Альфредо" />
-      <p>Кремова паста з сирним соусом та спеціями.</p>
-      <button onclick="openAR('pasta.glb')">Переглянути в AR</button>
-    </div>
-
-    <div class="menu-item">
-      <h2>Салат Цезар</h2>
-      <img src="assets/salad.jpg" alt="Салат Цезар" />
-      <p>Салат з куркою, грінками, сиром та соусом Цезар.</p>
-      <button onclick="openAR('salad.glb')">Переглянути в AR</button>
-    </div>
+  <div class="menu-item">
+    <h2>Піца Маргарита</h2>
+    <img src="assets/pizza.jpg" alt="Піца Маргарита">
+    <p>Класична піца з моцарелою, томатами та базиліком.</p>
+    <button onclick="startAR('pizza.glb')">Переглянути в AR</button>
   </div>
 
-  <!-- AR-сцена -->
-  <div id="ar-scene">
-    <button class="back-btn" onclick="closeAR()">← Назад</button>
-
-    <a-scene embedded arjs="sourceType: webcam;" vr-mode-ui="enabled: false" renderer="logarithmicDepthBuffer: true" background="color: transparent">
-      <a-camera position="0 1.6 3" look-controls="enabled: false" wasd-controls="enabled: false"></a-camera>
-
-      <!-- Контейнер для обертання -->
-      <a-entity id="model-wrapper" position="0 1 -2" rotation="0 0 0">
-        <a-entity id="model" scale="1.5 1.5 1.5"></a-entity>
-      </a-entity>
-    </a-scene>
+  <div class="menu-item">
+    <h2>Паста Альфредо</h2>
+    <img src="assets/pasta.jpg" alt="Паста Альфредо">
+    <p>Кремова паста з сирним соусом та спеціями.</p>
+    <button onclick="startAR('pasta.glb')">Переглянути в AR</button>
   </div>
+</div>
+
+<div id="ar-container">
+  <button class="back-btn" onclick="stopAR()">← Назад</button>
+  <a-scene embedded vr-mode-ui="enabled: false"
+           renderer="alpha: true; antialias: true; logarithmicDepthBuffer: true;"
+           arjs="sourceType: webcam; debugUIEnabled: false;">
+    <a-camera position="0 0 0" look-controls="enabled: false" wasd-controls="enabled: false"></a-camera>
+    <a-entity id="model-wrapper" position="0 0 -1.5" rotation="0 0 0">
+      <a-entity id="model" scale="1.5 1.5 1.5"></a-entity>
+    </a-entity>
+  </a-scene>
+</div>
 
 <script>
-  function openAR(modelFile) {
+  let modelLoaded = false;
+  let rotationY = 0;
+  let dragging = false;
+  let lastX = 0;
+
+  function startAR(modelFile) {
     document.getElementById('menu').style.display = 'none';
-    const arScene = document.getElementById('ar-scene');
-    arScene.style.display = 'block';
+    document.getElementById('ar-container').style.display = 'block';
 
-    const model = document.getElementById('model');
+    const mdl = document.getElementById('model');
     const wrapper = document.getElementById('model-wrapper');
-    model.setAttribute('gltf-model', `models/${modelFile}`);
+    mdl.setAttribute('gltf-model', `models/${modelFile}`);
+    modelLoaded = false;
 
-    // Центруємо модель після завантаження
-    model.addEventListener('model-loaded', () => {
-      const mesh = model.getObject3D('mesh');
+    mdl.addEventListener('model-loaded', () => {
+      if (modelLoaded) return;
+      modelLoaded = true;
+      const mesh = mdl.getObject3D('mesh');
       if (!mesh) return;
 
+      // Центрування
       const box = new THREE.Box3().setFromObject(mesh);
       const center = new THREE.Vector3();
       box.getCenter(center);
-
-      // Компенсуємо центр
       mesh.position.sub(center);
-      mesh.updateMatrixWorld();
-      console.log('[model-loaded] Центр моделі зрушено на', center);
+
+      // При потребі можна змінити масштаби: наприклад 2.0
+      mdl.setAttribute('scale', '2 2 2');
     });
 
-    // Кручення
-    let rotationY = 0;
-    let isDragging = false;
-    let lastX = 0;
-
-    const canvas = arScene.querySelector('canvas');
-    canvas.style.touchAction = 'none';
-
-    canvas.onpointerdown = (e) => {
-      isDragging = true;
+    const canvas = document.querySelector('canvas');
+    canvas.onpointerdown = e => {
+      dragging = true;
       lastX = e.clientX;
     };
-    canvas.onpointerup = () => isDragging = false;
-    canvas.onpointerleave = () => isDragging = false;
-    canvas.onpointermove = (e) => {
-      if (!isDragging) return;
-      const deltaX = e.clientX - lastX;
+    canvas.onpointerup = canvas.onpointerleave = () => dragging = false;
+    canvas.onpointermove = e => {
+      if (!dragging) return;
+      const dx = e.clientX - lastX;
       lastX = e.clientX;
-      rotationY += deltaX * 0.5;
+      rotationY += dx * 0.5;
       wrapper.setAttribute('rotation', `0 ${rotationY} 0`);
     };
   }
 
-  function closeAR() {
-    document.getElementById('ar-scene').style.display = 'none';
+  function stopAR() {
+    document.getElementById('ar-container').style.display = 'none';
     document.getElementById('menu').style.display = 'block';
     document.getElementById('model').removeAttribute('gltf-model');
+    rotationY = 0;
   }
 </script>
 
